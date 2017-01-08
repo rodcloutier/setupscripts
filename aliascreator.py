@@ -77,7 +77,7 @@ def main(argv):
                 sourcepath = tool["sourcePath"]
                 targetnames = tool["targetName"]
                 blocking = tool["blocking"] if "blocking" in tool else True
-                
+
                 if not os.path.exists(sourcepath) or not os.path.isfile(sourcepath):
                     raise Exception("Invalid source path {}".format(sourcepath))
 
