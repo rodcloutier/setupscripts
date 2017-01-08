@@ -85,11 +85,23 @@ def main(argv):
                 nixsourcepath = "/" + sourcepath.replace(":", "").replace("\\", "/")
                 if verbose: print("  Processing {} {} with aliases".format("non blocking" if not blocking else "", sourcepath))
 
-                batfilecontent = '@echo off\n{}"{}" %*'.format(
-                    'start "" ' if not  blocking else "", sourcepath)
-                bashfilecontent = '{}"{}" $@{}'.format(
+                batenvvars = ""
+                bashenvvars = ""
+                if "additionalEnvVariables" in tool:
+                    if verbose: print("  Adding environment variables: {}".format(tool["additionalEnvVariables"]))
+                    for key, val in tool["additionalEnvVariables"].items():
+                        batenvvars += "set {}={}\n".format(key, val)
+                        bashenvvars += "export {}='{}'\n".format(key, val)
+
+                batfilecontent = '@echo off\n{}{}"{}" %*'.format(
+                    batenvvars,
+                    'start "" ' if not  blocking else "",
+                    sourcepath)
+                bashfilecontent = '{}{}"{}" $@{}'.format(
+                    bashenvvars,
                     "nohup " if not blocking else "",
-                    nixsourcepath, " &>/dev/null &" if not blocking else "")
+                    nixsourcepath,
+                    " &>/dev/null &" if not blocking else "")
 
                 for target in targetnames:
                     if verbose: print("   Creating alias: {}".format(target))
