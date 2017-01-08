@@ -1,0 +1,91 @@
+{
+    "targetPath": "D:\\home\\bin",
+    "toolsets": [
+        {
+            "name":"python3",
+            "tools": [
+                {
+                    "sourcePath": "cpython-3.5.2.amd64\\python.exe",
+                    "targetName": ["python", "python3", "python35"]
+                },
+                {
+                    "sourcePath": "cpython-3.5.2.amd64\\Scripts\\pip.exe",
+                    "targetName": ["pip", "pip3", "pip35"]
+                },
+                {
+                    "sourcePath": "cpython-3.5.2.amd64\\Scripts\\pylint.exe",
+                    "targetName": ["pylint", "pylint3", "pylint35"]
+                }
+            ]
+        },
+        {
+            "name":"python2",
+            "tools": [
+                {
+                    "sourcePath": "cpython-2.7.12.amd64\\python.exe",
+                    "targetName": ["python2", "python27"]
+                }
+            ]
+        },
+        {
+            "name":"cloc",
+            "tools": [
+                {
+                    "sourcePath": "cloc-1.70.exe",
+                    "targetName": ["cloc"]
+                }
+            ]
+        },
+        {
+            "name":"premake",
+            "tools": [
+                {
+                    "sourcePath": "premake-5.10.exe",
+                    "targetName": ["premake"]
+                }
+            ]
+        },
+        {
+            "name":"cmake",
+            "tools": [
+                {
+                    "sourcePath": "cmake-3.7.1-win64-x64\\bin\\cmake.exe",
+                    "targetName": ["cmake"]
+                },
+                {
+                    "sourcePath": "cmake-3.7.1-win64-x64\\bin\\cmake-gui.exe",
+                    "targetName": ["cmake-gui"],
+                    "blocking": false
+                }
+            ]
+        },
+        {
+            "name":"vscode",
+            "tools": [
+                {
+                    "sourcePath": "..\\Program Files (x86)\\Microsoft VS Code\\Code.exe",
+                    "targetName": ["vscode", "code"],
+                    "blocking": false
+                }
+            ]
+        },
+        {
+            "name":"kubectl",
+            "tools": [
+                {
+                    "sourcePath": "kubectl-0.18.2.exe",
+                    "targetName": ["kubectl"]
+                }
+            ]
+        },
+        {
+            "name":"minikube",
+            "tools": [
+                {
+                    "sourcePath": "minikube-windows-amd64-0.14.0.exe",
+                    "targetName": ["minikube"]
+                }
+            ]
+        }
+    ]
+}
