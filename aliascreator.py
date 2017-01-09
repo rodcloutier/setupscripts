@@ -3,8 +3,8 @@ import json
 import sys
 import getopt
 
-def usage():
-    # script usage
+def usage(): 
+    # script usage 
     print(
         "aliascreator.py [-h|--help] [-i|--input filename]"
         "\n This script creates a set of aliases for commands to be called on windows from bash & cmd & ps"
@@ -13,6 +13,12 @@ def usage():
         "\n\t -i|--input   explicitly set an input file"
         "\n\t -v|--verbose verbose mode"
         )
+
+def write_on_position(filecontent, pos, value):
+    for c in bytes(value, "utf-8"):
+        filecontent[pos] = c
+        pos += 1
+    filecontent[pos] = 0
 
 def main(argv):
     # my code here
@@ -57,6 +63,7 @@ def main(argv):
 
     try:
         targetpath = jsoninput["targetPath"]
+        launcher = jsoninput["launcher"]
         toolsets = jsoninput["toolsets"]
     except KeyError as err:
         print("Missing mandatory keys in the input file : {}".format(str(err)))
@@ -67,6 +74,26 @@ def main(argv):
         sys.exit()
 
     if verbose: print("Target path: {}".format(targetpath))
+
+    if not os.path.exists(launcher) or not os.path.isfile(launcher):
+        print("Launcher not found : {}".format(targetpath))
+        sys.exit()
+
+    if verbose: print("Using launcher: {}".format(launcher)) 
+
+    try:
+        with open("launcher.exe", "rb") as f:
+            launchercontent = bytearray(f.read())
+            #bytes("C:\\DevTools\\cpython-3.5.2.amd64\\python.exe", "utf-8")
+            #bytes("", "utf-8")
+            appnamepos = launchercontent.find(b"FILLAPPNAME")
+            optionspos = launchercontent.find(b"FILLOPTIONS")
+            envvarspos = launchercontent.find(b"FILLENVVARS")
+            if (appnamepos is -1) or (optionspos is -1) or (envvarspos is -1):
+                raise Exception("Wrong launcher format")
+    except Exception as err:
+        print(str(err))
+        sys.exit()
 
     for toolset in toolsets:
         toolsetname = toolset["name"] if "name" in toolset else "unknown"
@@ -82,35 +109,27 @@ def main(argv):
                     raise Exception("Invalid source path {}".format(sourcepath))
 
                 sourcepath = os.path.abspath(sourcepath)
-                nixsourcepath = "/" + sourcepath.replace(":", "").replace("\\", "/")
-                if verbose: print("  Processing {} {} with aliases".format("non blocking" if not blocking else "", sourcepath))
+                if verbose: print("  Processing {} with aliases".format(sourcepath))
 
-                batenvvars = ""
-                bashenvvars = ""
+                options = "nonblocking,nostdredirect,"  if not blocking else ""
+                if verbose and len(options) is not 0: print("  Setting options: {}".format(options))
+
+                envvars = ""
                 if "additionalEnvVariables" in tool:
-                    if verbose: print("  Adding environment variables: {}".format(tool["additionalEnvVariables"]))
+                    if verbose: print("  Setting environment variables: {}".format(tool["additionalEnvVariables"]))
                     for key, val in tool["additionalEnvVariables"].items():
-                        batenvvars += "set {}={}\n".format(key, val)
-                        bashenvvars += "export {}='{}'\n".format(key, val)
+                        envvars += "{}={},".format(key, val)
 
-                batfilecontent = '@echo off\n{}{}"{}" %*'.format(
-                    batenvvars,
-                    'start "" ' if not  blocking else "",
-                    sourcepath)
-                bashfilecontent = '{}{}"{}" $@{}'.format(
-                    bashenvvars,
-                    "nohup " if not blocking else "",
-                    nixsourcepath,
-                    " &>/dev/null &" if not blocking else "")
+                launchercontentcopy = launchercontent.copy()
+                write_on_position(launchercontentcopy, appnamepos, sourcepath)
+                write_on_position(launchercontentcopy, optionspos, options)
+                write_on_position(launchercontentcopy, envvarspos, envvars)
 
                 for target in targetnames:
                     if verbose: print("   Creating alias: {}".format(target))
-                    batfilename = os.path.join(targetpath, target + ".bat")
-                    bashfilename = os.path.join(targetpath, target)
-                    with open(batfilename, "w") as f:
-                        f.write(batfilecontent)
-                    with open(bashfilename, "w") as f:
-                        f.write(bashfilecontent)
+                    aliasfilename = os.path.join(targetpath, target + ".exe")
+                    with open(aliasfilename, "wb") as f:
+                        f.write(launchercontentcopy)
 
             except KeyError as err:
                 print("Missing necessary key for tool spec from: {}".format(str(err)))

@@ -92,3 +92,6 @@ ENV/
 
 # vscode settings
 .vscode
+
+#launcher and c stuff
+launcher/build/

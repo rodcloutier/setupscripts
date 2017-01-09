@@ -1,5 +1,6 @@
 {
-    "targetPath": "D:\\home\\bin",
+    "targetPath": "C:\\Users\\jelmansouri\\bin",
+    "launcher": "launcher.exe",
     "toolsets": [
         {
             "name":"python3",
@@ -91,7 +92,7 @@
             "name":"golang",
             "tools": [
                 {
-                    "sourcePath": "C:\\DevTools\\go1.7.4.windows-amd64\\go\\bin\\go.exe",
+                    "sourcePath": "go1.7.4.windows-amd64\\go\\bin\\go.exe",
                     "targetName": ["go", "go17"],
                     "additionalEnvVariables": {"GOROOT":"C:\\DevTools\\go1.7.4.windows-amd64\\go"}
                 }
