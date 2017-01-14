@@ -1,5 +1,5 @@
 # Setup Scripts
-**The scripts you see here a are small utilities that I use to setup my windows personal and work machine
+**The scripts you see here a are small utilities that I use to setup my windows personal and work machine**
 
 ## aliascreator.py
 I prefer usually running portable utilities rather than installing them, thus I have more control and understanding about what the tool needs to work properly. This utility allows me to link a bunch of executables to my user bin path.
