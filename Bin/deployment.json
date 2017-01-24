@@ -1,0 +1,22 @@
+{
+    "binPath": "",
+    "installPath": "",
+    "launcherPath": "",
+    "launcherLibPath": "",
+    "toolsets": [
+        {
+            "name": "",
+            "path": "",
+            "tools": [
+                {
+                    "launcherConfig": {
+                        "exePath": "",
+                        "noWait": false,
+                        "envVariables": []
+                    },
+                    "aliases": []
+                }
+            ]
+        }
+    ]
+}
