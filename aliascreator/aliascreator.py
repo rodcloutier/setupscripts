@@ -84,8 +84,6 @@ def main(argv):
     try:
         with open("launcher.exe", "rb") as f:
             launchercontent = bytearray(f.read())
-            #bytes("C:\\DevTools\\cpython-3.5.2.amd64\\python.exe", "utf-8")
-            #bytes("", "utf-8")
             appnamepos = launchercontent.find(b"FILLAPPNAME")
             optionspos = launchercontent.find(b"FILLOPTIONS")
             envvarspos = launchercontent.find(b"FILLENVVARS")
