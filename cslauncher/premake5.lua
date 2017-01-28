@@ -54,7 +54,7 @@ project "Deployer"
     links     { "LauncherLib" }
 
     files { "Deployer/**.cs" }
-    files { "Deployer/deployment.json" }
+    files { "deployment.json" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -65,5 +65,5 @@ project "Deployer"
         optimize "On"
         symbols "Off"
 
-    configuration "Deployer/deployment.json"
+    configuration "deployment.json"
         buildaction "Copy"
