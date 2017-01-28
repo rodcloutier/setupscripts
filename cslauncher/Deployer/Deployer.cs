@@ -3,25 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using CSLauncher.LauncherLib;
+using System.Net;
+using System.IO.Compression;
 
 namespace CSLauncher.Deployer
 {
     public class Deployer
     {
-        struct CopyRequest
-        {
-            internal CopyRequest(string from, string to, bool isFile)
-            {
-                From = from;
-                To = to;
-                IsFile = isFile;
-            }
-
-            internal string From;
-            internal string To;
-            internal bool IsFile;
-        }
-
         struct AliasRequest
         {
             internal AliasRequest(LauncherConfig launcherConfig, string aliasPath)
@@ -37,77 +25,17 @@ namespace CSLauncher.Deployer
         private Deployment Deployment;
         private bool Verbose;
 
-        List<CopyRequest> CopyRequests;
-        List<AliasRequest> AliasRequests;
+        List<Action> PackageSetupActions = new List<Action>();
+        List<Action> AliasSetupActions = new List<Action>();
 
         public Deployer(Deployment deployment, bool verbose)
         {
             Deployment = deployment;
             Verbose = verbose;
-
-            CopyRequests = new List<CopyRequest>();
-            AliasRequests = new List<AliasRequest>();
         }
 
-        private static void CopyDirectory(string source, string target, bool copySubDirs)
-        {
-            // Get the subdirectories for the specified directory.
-            DirectoryInfo dir = new DirectoryInfo(source);
 
-            if (!dir.Exists)
-            {
-                throw new DirectoryNotFoundException(
-                    "Source directory does not exist or could not be found: "
-                    + source);
-            }
-
-            DirectoryInfo[] dirs = dir.GetDirectories();
-            // If the destination directory doesn't exist, create it.
-            if (!Directory.Exists(target))
-            {
-                Directory.CreateDirectory(target);
-            }
-
-            // Get the files in the directory and copy them to the new location.
-            FileInfo[] files = dir.GetFiles();
-            foreach (FileInfo file in files)
-            {
-                string tempPath = Path.Combine(target, file.Name);
-                if (!File.Exists(tempPath))
-                    file.CopyTo(tempPath, false);
-            }
-
-            // If copying subdirectories, copy them and their contents to new location.
-            if (copySubDirs)
-            {
-                foreach (DirectoryInfo subdir in dirs)
-                {
-                    string temppath = Path.Combine(target, subdir.Name);
-                    CopyDirectory(subdir.FullName, temppath, copySubDirs);
-                }
-            }
-        }
-
-        private static Task CopyDirectoryAsync(string source, string target, bool copySubDirs)
-        {
-            return Task.Run(() => CopyDirectory(source, target, copySubDirs));
-        }
-
-        private static void CopyFile(string source, string target)
-        {
-            if (!File.Exists(target))
-            {
-                var fileInfo = new FileInfo(source);
-                fileInfo.CopyTo(target);
-            }
-        }
-
-        private static Task CopyFileAsync(string source, string target)
-        {
-            return Task.Run(() => CopyFile(source, target));
-        }
-
-        public void Prepare()
+        public void Prepare(string toolsetFilter)
         {
             string binPath = Path.GetFullPath(Deployment.BinPath);
             if (Verbose) Console.WriteLine("Using bin path:{0}", binPath);
@@ -116,91 +44,51 @@ namespace CSLauncher.Deployer
             if (Verbose) Console.WriteLine("Using install path:{0}", installPath);
 
             if (installPath.ToLower() == binPath.ToLower())
-            {
                 throw new Exception("The install path and the bin path cannot point to the same directory");
-            }
 
             if (!File.Exists(Deployment.LauncherPath))
-            {
                 throw new Exception("Could not find the launcher app");
-            }
 
             if (!File.Exists(Deployment.LauncherLibPath))
-            {
                 throw new Exception("Could not find the launcher lib");
-            }
 
             if (Verbose) Console.WriteLine("Using launcher path:{0}", Deployment.LauncherPath);
 
             var installPathsSet = new HashSet<string>();
-            var aliasPathsSet = new HashSet<string>();
             foreach (ToolSet toolset in Deployment.ToolSets)
             {
+                if (toolsetFilter != null && toolsetFilter != toolset.Name)
+                    continue;
+
                 if (Verbose) Console.WriteLine("Processing toolset {0} started", toolset.Name);
-                string toolsetPath = Path.GetFullPath(toolset.Path);
-                bool isFile = File.Exists(toolsetPath);
-                bool isDirectory = Directory.Exists(toolsetPath);
 
-                if (!isFile && !isDirectory)
-                {
-                    throw new Exception(string.Format("Tool set path ({0}) does not exist", toolsetPath));
-                }
-
-                string destinationName = Path.GetFileName(toolset.Path);
-                string destinationPath = Path.Combine(Deployment.InstallPath, destinationName);
-
-                if (installPathsSet.Contains(destinationPath.ToLower()))
-                {
-                    throw new Exception(string.Format("Duplicate destination path: {0}", destinationName));
-                }
-                installPathsSet.Add(destinationPath.ToLower());
-
-                CopyRequests.Add(new CopyRequest(toolset.Path, destinationPath, isFile));
-                if (Verbose) Console.WriteLine("--Copying {0} from {1} to {2}", isFile ? "file" : "directory", toolset.Path, destinationPath);
+                string toolsetInstallPath;
+                if (toolset.UrlSource != null)
+                    toolsetInstallPath = HandleUrlSource(toolset.UrlSource, installPath);
+                else if (toolset.NugetSource != null)
+                    toolsetInstallPath = HandleNugetSource(toolset.NugetSource, installPath);
+                else
+                    throw new Exception(string.Format("Toolset {} missing source url and nuget", toolset));
 
                 foreach (Tool tool in toolset.Tools)
                 {
-                    if (Verbose) Console.WriteLine("--Processing tool {0}", toolset.Name);
-                    LauncherConfig launcherConfig = new LauncherConfig();
-
-                    launcherConfig.ExePath = isFile ? destinationPath : Path.Combine(destinationPath, tool.LauncherConfig.ExePath);
-                    launcherConfig.NoWait = tool.LauncherConfig.NoWait;
-                    launcherConfig.EnvVariables = tool.LauncherConfig.EnvVariables;
-
-                    foreach (string alias in tool.Aliases)
-                    {
-                        if (Verbose) Console.WriteLine("----Adding alias {0}", alias);
-                        string aliasPath = Path.Combine(binPath, alias);
-                        if (aliasPathsSet.Contains(aliasPath.ToLower()))
-                        {
-                            throw new Exception(string.Format("Duplicate alias path: {0}", aliasPath));
-                        }
-                        aliasPathsSet.Add(aliasPath);
-                        AliasRequests.Add(new AliasRequest(launcherConfig, aliasPath));
-                    }
+                    HandleTool(toolset, tool, binPath, toolsetInstallPath);
                 }
             }
         }
 
-        public void ProcessCopies(bool clean)
+        public void ProcessPackages(bool clean)
         {
-            var tasks = new List<Task>();
-            tasks.Capacity = CopyRequests.Count;
             if (clean && Directory.Exists(Deployment.InstallPath))
             {
                 Directory.Delete(Deployment.InstallPath, true);
             }
             Directory.CreateDirectory(Deployment.InstallPath);
-            foreach (CopyRequest copyRequest in CopyRequests)
+
+            var tasks = new List<Task>();
+            foreach (var packageAction in PackageSetupActions)
             {
-                if (copyRequest.IsFile)
-                {
-                    tasks.Add(CopyFileAsync(copyRequest.From, copyRequest.To));
-                }
-                else
-                {
-                    tasks.Add(CopyDirectoryAsync(copyRequest.From, copyRequest.To, true));
-                }
+                tasks.Add(Task.Run(packageAction));
             }
 
             Task.WaitAll(tasks.ToArray());
@@ -216,15 +104,92 @@ namespace CSLauncher.Deployer
 
             string launcherLibPath = Path.Combine(Deployment.BinPath, Path.GetFileName(Deployment.LauncherLibPath));
             CopyFile(Deployment.LauncherLibPath, launcherLibPath);
-            foreach(AliasRequest aliasRequest in AliasRequests)
+
+            var tasks = new List<Task>();
+            foreach (var aliasAction in AliasSetupActions)
             {
-                string launcherPath = aliasRequest.AliasPath + ".exe";
-                var fileInfo = new FileInfo(Deployment.LauncherPath);
-                fileInfo.CopyTo(launcherPath, true);
-                string configPath = aliasRequest.AliasPath + ".cfg";
-                AppInfoSerializer.Write(configPath, aliasRequest.LauncherConfig);
+                tasks.Add(Task.Run(aliasAction));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+        }
+
+        private string HandleUrlSource(string urlSource, string installPath)
+        {
+            int separatorIdx = urlSource.LastIndexOf('/') + 1;
+            string zipFileName = urlSource.Substring(separatorIdx, urlSource.Length - separatorIdx);
+            string zipFileNameWithoutExt = zipFileName.Substring(0, zipFileName.Length - 4);
+            string toolsetInstallPath = Path.Combine(installPath, zipFileNameWithoutExt);
+            string dowloadPath = Path.Combine(installPath, zipFileName);
+
+            if (!Directory.Exists(toolsetInstallPath))
+            {
+                PackageSetupActions.Add( () =>
+                    {
+                        using (var client = new WebClient())
+                        {
+                            client.DownloadFile(urlSource, dowloadPath);
+                        }
+                        ZipFile.ExtractToDirectory(dowloadPath, installPath);
+                        File.Delete(dowloadPath);
+                    }
+                );
+            }
+            
+            return toolsetInstallPath;
+        }
+
+        private string HandleNugetSource(NugetSource nugetSource, string installPath)
+        {
+            //ID of the package to be looked up
+            /*string packageID = "EntityFramework";
+
+            //Connect to the official package repository
+            IPackageRepository repo = PackageRepositoryFactory.Default.CreateRepository("https://packages.nuget.org/api/v2");
+
+            //Initialize the package manager
+            string path = "";
+            PackageManager packageManager = new PackageManager(repo, path);
+
+            //Download and unzip the package
+            packageManager.InstallPackage(packageID, SemanticVersion.Parse("5.0.0"));
+            */
+            throw new NotImplementedException();
+        }
+
+        private void HandleTool(ToolSet toolset, Tool tool, string binPath, string toolsetInstallPath)
+        {
+            if (Verbose) Console.WriteLine("--Processing tool {0}", toolset.Name);
+            LauncherConfig launcherConfig = new LauncherConfig();
+
+            launcherConfig.ExePath = Path.Combine(toolsetInstallPath, tool.LauncherConfig.ExePath);
+            launcherConfig.NoWait = tool.LauncherConfig.NoWait;
+            launcherConfig.EnvVariables = tool.LauncherConfig.EnvVariables;
+
+            foreach (string alias in tool.Aliases)
+            {
+                if (Verbose) Console.WriteLine("----Adding alias {0}", alias);
+                string aliasPath = Path.Combine(binPath, alias);
+                AliasSetupActions.Add(
+                    () =>
+                    {
+                        string aliasExePath = aliasPath + ".exe";
+                        CopyFile(Deployment.LauncherPath, aliasExePath, true);
+                        string configPath = aliasPath + ".cfg";
+                        AppInfoSerializer.Write(configPath, launcherConfig);
+
+                    }
+                );
+            }
+        }
+
+        private static void CopyFile(string source, string target, bool overwrite = false)
+        {
+            if (overwrite || !File.Exists(target))
+            {
+                var fileInfo = new FileInfo(source);
+                fileInfo.CopyTo(target, overwrite);
             }
         }
     }
-
 }

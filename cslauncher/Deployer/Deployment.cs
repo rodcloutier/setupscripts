@@ -16,13 +16,29 @@ namespace CSLauncher.Deployer
     }
 
     [DataContract]
+    public class NugetSource
+    {
+        [DataMember(Name = "repositoryUrl")]
+        public string RepositoryUrl;
+
+        [DataMember(Name = "packageName")]
+        public string PackageName;
+
+        [DataMember(Name = "packageVersion")]
+        public string PackageVersion;
+    }
+
+    [DataContract]
     public class ToolSet
     {
         [DataMember(Name = "name")]
         public string Name;
 
-        [DataMember(Name = "path")]
-        public string Path;
+        [DataMember(Name = "url")]
+        public string UrlSource;
+
+        [DataMember(Name = "nuget")]
+        public NugetSource NugetSource;
 
         [DataMember(Name = "tools")]
         public Tool[] Tools;

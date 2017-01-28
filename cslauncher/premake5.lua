@@ -1,63 +1,69 @@
 -- premake5.lua
 workspace "CSLauncher"
-   configurations { "Debug", "Release" }
-   architecture "x86_64"
-   location "Build"
+    configurations { "Debug", "Release" }
+    architecture "x86_64"
+    location "Build"
 
 project "LauncherLib"
-   kind "SharedLib"
-   language "C#"
-   targetdir "Bin"
-   links     { "System" }
-   links     { "System.Runtime.Serialization" }
-   links     { "System.Xml" }
+    kind "SharedLib"
+    language "C#"
+    targetdir "Build/bin/%{cfg.buildcfg}"
+    links     { "System" }
+    links     { "System.Runtime.Serialization" }
+    links     { "System.Xml" }
 
-   files { "LauncherLib/**.cs" }
+    files { "LauncherLib/**.cs" }
 
-   filter "configurations:Debug"
-      defines { "DEBUG" }
-      symbols "On" 
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On" 
 
-   filter "configurations:Release"
-      defines { "NDEBUG" }
-      optimize "On"
-      symbols "Off"
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
+        symbols "Off"
 
 
 project "Launcher"
-   kind "ConsoleApp"
-   language "C#"
-   targetdir "Bin"
-   links     { "System" }
-   links     { "LauncherLib" }
+    kind "ConsoleApp"
+    language "C#"
+    targetdir "Build/bin/%{cfg.buildcfg}"
+    links     { "System" }
+    links     { "LauncherLib" }
 
-   files { "Launcher/**.cs" }
+    files { "Launcher/**.cs" }
 
-   filter "configurations:Debug"
-      defines { "DEBUG" }
-      symbols "On" 
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On" 
 
    filter "configurations:Release"
-      defines { "NDEBUG" }
-      optimize "On"
-      symbols "Off" 
+        defines { "NDEBUG" }
+        optimize "On"
+        symbols "Off" 
 
 project "Deployer"
-   kind "ConsoleApp"
-   language "C#"
-   targetdir "Bin"
-   links     { "System" }
-   links     { "System.Runtime.Serialization" }
-   links     { "System.Xml" }
-   links     { "LauncherLib" }
-   
-   files { "Deployer/**.cs" }
+    kind "ConsoleApp"
+    language "C#"
+    targetdir "Build/bin/%{cfg.buildcfg}"
+    -- nuget     { "NuGet.Core:2.14" }
+    links     { "System" }
+    links     { "System.Runtime.Serialization" }
+    links     { "System.Xml" }
+    links     { "System.IO.Compression.FileSystem" }
+    links     { "LauncherLib" }
 
-   filter "configurations:Debug"
-      defines { "DEBUG" }
-      symbols "On" 
+    files { "Deployer/**.cs" }
+    files { "Deployer/deployment.json" }
 
-   filter "configurations:Release"
-      defines { "NDEBUG" }
-      optimize "On"
-      symbols "Off"
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On" 
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
+        symbols "Off"
+
+    configuration "Deployer/deployment.json"
+        buildaction "Copy"
