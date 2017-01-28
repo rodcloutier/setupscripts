@@ -165,7 +165,11 @@ namespace CSLauncher.Deployer
             launcherConfig.ExePath = Path.Combine(toolsetInstallPath, tool.LauncherConfig.ExePath);
             launcherConfig.NoWait = tool.LauncherConfig.NoWait;
             launcherConfig.EnvVariables = tool.LauncherConfig.EnvVariables;
-
+            for (int i = 0; i < launcherConfig.EnvVariables.Length; ++i)
+            {
+                if (launcherConfig.EnvVariables[i].Value.Contains("{installPath}"))
+                    launcherConfig.EnvVariables[i].Value = launcherConfig.EnvVariables[i].Value.Replace("{installPath}", toolsetInstallPath);
+            }
             foreach (string alias in tool.Aliases)
             {
                 if (Verbose) Console.WriteLine("----Adding alias {0}", alias);

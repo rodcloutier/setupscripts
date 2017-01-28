@@ -1,6 +1,6 @@
 {
-    "binPath": "C:\\Users\\jelmansouri\\bin4",
-    "installPath": "C:\\Users\\jelmansouri\\bin4\\packages",
+    "binPath": "C:\\Users\\jelmansouri\\bin",
+    "installPath": "C:\\Users\\jelmansouri\\bin\\packages",
     "launcherPath": "Launcher.exe",
     "launcherLibPath": "LauncherLib.dll",
     "toolsets": [
