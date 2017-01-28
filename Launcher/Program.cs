@@ -17,14 +17,31 @@ namespace CSLauncher.Launcher
             string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName)) + ".cfg";
             // {2}
             //File.WriteAllText(path, _JsonString);
-
             LauncherConfig launcherConfig = AppInfoSerializer.Read(path);
 
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = launcherConfig.ExePath;
-            startInfo.Arguments = string.Join(" ", args);
+
+            string cmd = Environment.CommandLine;
+            // Remove exe part from raw command line
+            int firstArgIndex = 0;
+            bool discardNextSpaces = false;
+            foreach (char c in cmd)
+            {
+                if (c == '\"')
+                {
+                    discardNextSpaces = !discardNextSpaces;
+                }
+
+                if (!discardNextSpaces && (c == ' ' || c == '\t'))
+                    break;
+
+                firstArgIndex++;
+            }
+            string arguments = cmd.Substring(firstArgIndex, cmd.Length - firstArgIndex).Trim();
+            startInfo.Arguments = arguments;
 
             foreach(EnvVariable envVariable in launcherConfig.EnvVariables)
             {

@@ -145,7 +145,7 @@
                 {
                     "launcherConfig": {
                         "exePath": "Code.exe",
-                        "noWait": false,
+                        "noWait": true,
                         "envVariables": []
                     },
                     "aliases": ["code", "vscode"]
