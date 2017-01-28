@@ -24,6 +24,9 @@ namespace CSLauncher.LauncherLib
 
         [DataMember(Name = "envVariables")]
         public EnvVariable[] EnvVariables;
+
+        [DataMember(Name = "timeStamp")]
+        public string TimeStamp;
     }
 
     public class AppInfoSerializer

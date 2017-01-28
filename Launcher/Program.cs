@@ -14,8 +14,7 @@ namespace CSLauncher.Launcher
         [STAThread]
         static int Main(string[] args)
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, AppDomain.CurrentDomain.FriendlyName);
-            path = Path.GetFileNameWithoutExtension(path) + ".cfg";
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName)) + ".cfg";
             // {2}
             //File.WriteAllText(path, _JsonString);
 
