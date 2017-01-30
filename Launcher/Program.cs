@@ -45,7 +45,10 @@ namespace CSLauncher.Launcher
 
             foreach(EnvVariable envVariable in launcherConfig.EnvVariables)
             {
-                startInfo.EnvironmentVariables.Add(envVariable.Key, envVariable.Value);
+                if (startInfo.EnvironmentVariables.ContainsKey(envVariable.Key))
+                    startInfo.EnvironmentVariables[envVariable.Key] = envVariable.Value;
+                else
+                    startInfo.EnvironmentVariables.Add(envVariable.Key, envVariable.Value);
             }
 
             Process p = Process.Start(startInfo);
