@@ -7,6 +7,6 @@ The gaming industry relies a lot on the use of windows (even exlusively since a 
 New version of the launcher I'm using, deployer allows me to get dependencies and build aliases to the different apps copied. Note that I don't support installing packages and it's this way by design, it forces me to find or build an install-less package out of dependencies
 See aliascreator.py part since it's pretty much end up doing the same thing. I wanted to add NuGet support and it was more conveinient doing it in C#
 
-## aliascreator.py / C launch (Deprecated)
+## aliascreator
 I prefer usually running portable utilities rather than installing them, thus I have more control and understanding about what the tool needs to work properly. This utility allows me to link a bunch of executables to my user bin path.
 Why not just use symlinks? when launched through cmd or powershell, Symlinks will behave like the executable was copied to the target location, meaning that the ExcutablePath will not point the the source executable path which meddles with DLL resolve paths or any instance where the program getting called relies on the ExecutablePath.
