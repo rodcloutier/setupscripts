@@ -65,13 +65,28 @@ namespace CSLauncher.Deployer
 
     public class DeploymentSerializer
     {
+        private static string RootPath(string path)
+        {
+            if (!Path.IsPathRooted(path))
+            {
+                string currentExecutablePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                return Path.Combine(currentExecutablePath, path);
+            }
+            return path;
+        }
+
         public static Deployment Read(string path)
         {
             FileStream fileStream = new FileStream(path, FileMode.Open);
             DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Deployment));
             object objDeployment = jsonSerializer.ReadObject(fileStream);
             fileStream.Close();
-            return objDeployment as Deployment;
+            Deployment dep = objDeployment as Deployment;
+
+            dep.LauncherPath = RootPath(dep.LauncherPath);
+            dep.LauncherLibPath = RootPath(dep.LauncherLibPath);
+
+            return dep;
         }
     }
 }
