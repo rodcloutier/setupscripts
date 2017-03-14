@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace CSLauncher.Deployer
 {
@@ -18,17 +19,43 @@ namespace CSLauncher.Deployer
             return arg.Remove(0, format.Length);
         }
 
+        internal static void PrintUsage()
+        {
+            Console.WriteLine("Deployer expect to read in the current directory a deployment.json file that defines");
+            Console.WriteLine("the files to deploy/install");
+            Console.WriteLine("Usage: Deployer.exe [options]");
+            Console.WriteLine("where:");
+            Console.WriteLine("\t-h,--help\tPrint this help");
+            Console.WriteLine("\t-v,--verbose\tIncreases log verbosity");
+            Console.WriteLine("\t-d,--dryrun\tParses and prepare the deployment but does not run the Package and Aliases steps");
+            Console.WriteLine("\t-c,--clean\tDelete the deployment directory before doing the install");
+            Console.WriteLine("\t--toolset\t");
+        }
+
         [STAThread]
         static int Main(string[] args)
         {
             try
             {
-                bool verbose = HasOption(args, "-v", "--version");
+                bool help = HasOption(args, "-h", "--help");
+                bool verbose = HasOption(args, "-v", "--verbose");
                 bool dryRun = HasOption(args, "-d", "--dryrun");
                 bool clean = HasOption(args, "-c", "--clean");
                 string toolset = GetOptionValue(args, "--toolset=");
 
-                Deployment deployment = DeploymentSerializer.Read("deployment.json");
+                if (help)
+                {
+                    PrintUsage();
+                    return 0;
+                }
+
+                string deploymentFile = "deployment.json";
+                if (! File.Exists(deploymentFile) )
+                {
+                    throw new Exception("Expected file deployment.json not found in current directory");
+                }
+
+                Deployment deployment = DeploymentSerializer.Read(deploymentFile);
 
                 var deployer = new Deployer(deployment, verbose);
                 deployer.Prepare(toolset);
