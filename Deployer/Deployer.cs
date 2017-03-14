@@ -38,10 +38,10 @@ namespace CSLauncher.Deployer
         public void Prepare(string toolsetFilter)
         {
             string binPath = Path.GetFullPath(Deployment.BinPath);
-            if (Verbose) Console.WriteLine("Using bin path:{0}", binPath);
+            LogVerbose("Using bin path:{0}", binPath);
 
             string installPath = Path.GetFullPath(Deployment.InstallPath);
-            if (Verbose) Console.WriteLine("Using install path:{0}", installPath);
+            LogVerbose("Using install path:{0}", installPath);
 
             if (installPath.ToLower() == binPath.ToLower())
                 throw new Exception("The install path and the bin path cannot point to the same directory");
@@ -52,7 +52,7 @@ namespace CSLauncher.Deployer
             if (!File.Exists(Deployment.LauncherLibPath))
                 throw new Exception("Could not find the launcher lib");
 
-            if (Verbose) Console.WriteLine("Using launcher path:{0}", Deployment.LauncherPath);
+            LogVerbose("Using launcher path:{0}", Deployment.LauncherPath);
 
             var installPathsSet = new HashSet<string>();
             foreach (ToolSet toolset in Deployment.ToolSets)
@@ -60,7 +60,7 @@ namespace CSLauncher.Deployer
                 if (toolsetFilter != null && toolsetFilter != toolset.Name)
                     continue;
 
-                if (Verbose) Console.WriteLine("Processing toolset {0} started", toolset.Name);
+                Log("Toolset {0} preparation started", toolset.Name);
 
                 string toolsetInstallPath;
                 if (toolset.UrlSource != null)
@@ -68,7 +68,7 @@ namespace CSLauncher.Deployer
                 else if (toolset.NugetSource != null)
                     toolsetInstallPath = HandleNugetSource(toolset.NugetSource, installPath);
                 else
-                    throw new Exception(string.Format("Toolset {} missing source url and nuget", toolset));
+                    throw new Exception(string.Format("Toolset {0} missing source url and nuget", toolset));
 
                 foreach (Tool tool in toolset.Tools)
                 {
@@ -116,6 +116,8 @@ namespace CSLauncher.Deployer
 
         private string HandleUrlSource(string urlSource, string installPath)
         {
+            LogVerbose("--Preparing source {0}", urlSource);
+
             int separatorIdx = urlSource.LastIndexOf('/') + 1;
             string zipFileName = urlSource.Substring(separatorIdx, urlSource.Length - separatorIdx);
             string zipFileNameWithoutExt = zipFileName.Substring(0, zipFileName.Length - 4);
@@ -126,11 +128,18 @@ namespace CSLauncher.Deployer
             {
                 PackageSetupActions.Add( () =>
                     {
+                        Log("Processing zip file {0}", zipFileName);
+
+                        LogVerbose("--Downlading {0}", urlSource);
                         using (var client = new WebClient())
                         {
                             client.DownloadFile(urlSource, dowloadPath);
                         }
+
+                        LogVerbose("--Unzipping {0} to {1}", dowloadPath, installPath);
                         ZipFile.ExtractToDirectory(dowloadPath, installPath);
+
+                        LogVerbose("--Deleting {0}", dowloadPath);
                         File.Delete(dowloadPath);
                     }
                 );
@@ -159,7 +168,7 @@ namespace CSLauncher.Deployer
 
         private void HandleTool(ToolSet toolset, Tool tool, string binPath, string toolsetInstallPath)
         {
-            if (Verbose) Console.WriteLine("--Processing tool {0}", toolset.Name);
+            LogVerbose("--Preparing tool {0}", toolset.Name);
             LauncherConfig launcherConfig = new LauncherConfig();
 
             launcherConfig.ExePath = Path.Combine(toolsetInstallPath, tool.LauncherConfig.ExePath);
@@ -172,16 +181,19 @@ namespace CSLauncher.Deployer
             }
             foreach (string alias in tool.Aliases)
             {
-                if (Verbose) Console.WriteLine("----Adding alias {0}", alias);
+                LogVerbose("----Preparing alias {0}", alias);
                 string aliasPath = Path.Combine(binPath, alias);
                 AliasSetupActions.Add(
                     () =>
                     {
+                        Log("Processing alias {0}", alias);
+
                         string aliasExePath = aliasPath + ".exe";
+                        LogVerbose("--Copying launcher to {0}", aliasExePath);
                         CopyFile(Deployment.LauncherPath, aliasExePath, true);
                         string configPath = aliasPath + ".cfg";
+                        LogVerbose("--Serializing config file to {0}", configPath);
                         AppInfoSerializer.Write(configPath, launcherConfig);
-
                     }
                 );
             }
@@ -194,6 +206,17 @@ namespace CSLauncher.Deployer
                 var fileInfo = new FileInfo(source);
                 fileInfo.CopyTo(target, overwrite);
             }
+        }
+
+        private void LogVerbose(string format, params object[] arg)
+        {
+            if (Verbose)
+                Console.WriteLine(format, arg);
+        }
+
+        private void Log(string format, params object[] arg)
+        {
+            Console.WriteLine(format, arg);
         }
     }
 }
