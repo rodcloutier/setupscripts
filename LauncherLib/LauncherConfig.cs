@@ -27,6 +27,23 @@ namespace CSLauncher.LauncherLib
 
         [DataMember(Name = "timeStamp")]
         public string TimeStamp;
+
+        public LauncherConfig()
+        {
+            SetDefaults();
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext context)
+        {
+            SetDefaults();
+        }
+
+        private void SetDefaults()
+        {
+            NoWait = false;
+            EnvVariables = new EnvVariable[] { };
+        }
     }
 
     public class AppInfoSerializer
@@ -49,4 +66,4 @@ namespace CSLauncher.LauncherLib
         }
     }
 }
-    
+
