@@ -178,6 +178,52 @@ namespace CSLauncher.Deployer
             throw new NotImplementedException();
         }
 
+        private Action CreateExeAliasSetupAction(LauncherConfig launcherConfig, string alias, string aliasPath)
+        {
+            return () =>
+            {
+                Log("Processing exe alias {0}", alias);
+
+                string aliasExePath = aliasPath + ".exe";
+                LogVerbose("--Copying launcher to {0}", aliasExePath);
+                CopyFile(Deployment.LauncherPath, aliasExePath, true);
+                string configPath = aliasPath + ".cfg";
+                LogVerbose("--Serializing config file to {0}", configPath);
+                AppInfoSerializer.Write(configPath, launcherConfig);
+            };
+        }
+
+        private Action CreateBashScriptAliasSetupAction(LauncherConfig launcherConfig, string alias, string aliasPath)
+        {
+            return () =>
+            {
+                Log("Processing bash alias {0}", alias);
+
+                LogVerbose("--Creating laucher script {0}", aliasPath);
+
+                using (StreamWriter file = new StreamWriter(aliasPath))
+                {
+                    // TODO Use a templating technique instead
+                    file.WriteLine("#! /bin/bash");
+                    file.WriteLine();
+
+                    foreach( EnvVariable env in launcherConfig.EnvVariables)
+                    {
+                        file.WriteLine("export {0}={1}", env.Key, env.Value);
+                    }
+                    file.WriteLine();
+
+                    file.WriteLine("# Get full directory name of the script no matter where it is being called from.");
+                    file.WriteLine("CURRENT_DIR=$(cd $(dirname ${BASH_SOURCE[0]-$0} ) ; pwd )");
+                    file.WriteLine();
+
+                    string nixPath = '/' + launcherConfig.ExePath.Replace(":", string.Empty).Replace('\\', '/');
+                    file.WriteLine("# Call the actual tool");
+                    file.WriteLine("source {0}", nixPath);
+                }
+            };
+        }
+          
         private void HandleTool(ToolSet toolset, Tool tool, string binPath, string toolsetInstallPath)
         {
             LogVerbose("--Preparing tool {0}", toolset.Name);
@@ -186,28 +232,32 @@ namespace CSLauncher.Deployer
             launcherConfig.ExePath = Path.Combine(toolsetInstallPath, tool.LauncherConfig.ExePath);
             launcherConfig.NoWait = tool.LauncherConfig.NoWait;
             launcherConfig.EnvVariables = tool.LauncherConfig.EnvVariables;
+            launcherConfig.Type = tool.LauncherConfig.Type;
+
             for (int i = 0; i < launcherConfig.EnvVariables.Length; ++i)
             {
                 if (launcherConfig.EnvVariables[i].Value.Contains("{installPath}"))
                     launcherConfig.EnvVariables[i].Value = launcherConfig.EnvVariables[i].Value.Replace("{installPath}", toolsetInstallPath);
             }
+
+            Func<LauncherConfig, string, string, Action> createAliasSetupAction;
+            switch (launcherConfig.Type)
+            {
+                case "exe":
+                    createAliasSetupAction = CreateExeAliasSetupAction;
+                    break;
+                case "bash":
+                    createAliasSetupAction = CreateBashScriptAliasSetupAction;
+                    break;
+                default:
+                    throw new Exception("Invalid launcherConfig.type: " + launcherConfig.Type);
+            }
+
             foreach (string alias in tool.Aliases)
             {
                 LogVerbose("----Preparing alias {0}", alias);
                 string aliasPath = Path.Combine(binPath, alias);
-                AliasSetupActions.Add(
-                    () =>
-                    {
-                        Log("Processing alias {0}", alias);
-
-                        string aliasExePath = aliasPath + ".exe";
-                        LogVerbose("--Copying launcher to {0}", aliasExePath);
-                        CopyFile(Deployment.LauncherPath, aliasExePath, true);
-                        string configPath = aliasPath + ".cfg";
-                        LogVerbose("--Serializing config file to {0}", configPath);
-                        AppInfoSerializer.Write(configPath, launcherConfig);
-                    }
-                );
+                AliasSetupActions.Add(createAliasSetupAction(launcherConfig, alias, aliasPath));
             }
         }
 

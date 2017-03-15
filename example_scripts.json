@@ -1,0 +1,27 @@
+{
+    "binPath": "f:\\apps",
+    "installPath": "f:\\apps\\packages",
+    "launcherPath": "Launcher.exe",
+    "launcherLibPath": "LauncherLib.dll",
+    "toolsets": [
+        {
+            "name": "hello",
+            "url": "file://C:/DevTools/sources/hello-1.0.0.zip",
+            "tools": [
+                {
+                    "launcherConfig": {
+                        "exePath": "hello.sh",
+                        "type": "bash",
+                        "envVariables": [
+                            {
+                                "key": "FOO",
+                                "value": "BAR"
+                            }
+                        ]
+                    },
+                    "aliases": ["hello"]
+                }
+            ]
+        }
+    ]
+}
