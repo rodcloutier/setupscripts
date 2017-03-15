@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CSLauncher.LauncherLib;
 using System.Net;
@@ -54,7 +55,6 @@ namespace CSLauncher.Deployer
 
             LogVerbose("Using launcher path:{0}", Deployment.LauncherPath);
 
-            var installPathsSet = new HashSet<string>();
             foreach (ToolSet toolset in Deployment.ToolSets)
             {
                 if (toolsetFilter != null && toolsetFilter != toolset.Name)
@@ -122,7 +122,7 @@ namespace CSLauncher.Deployer
             string zipFileName = urlSource.Substring(separatorIdx, urlSource.Length - separatorIdx);
             string zipFileNameWithoutExt = zipFileName.Substring(0, zipFileName.Length - 4);
             string toolsetInstallPath = Path.Combine(installPath, zipFileNameWithoutExt);
-            string dowloadPath = Path.Combine(installPath, zipFileName);
+            string downloadPath = Path.Combine(installPath, zipFileName);
 
             if (!Directory.Exists(toolsetInstallPath))
             {
@@ -130,21 +130,33 @@ namespace CSLauncher.Deployer
                     {
                         Log("Processing zip file {0}", zipFileName);
 
-                        LogVerbose("--Downlading {0}", urlSource);
+                        LogVerbose("--Downloading {0}", urlSource);
                         using (var client = new WebClient())
                         {
-                            client.DownloadFile(urlSource, dowloadPath);
+                            client.DownloadFile(urlSource, downloadPath);
                         }
 
-                        LogVerbose("--Unzipping {0} to {1}", dowloadPath, installPath);
-                        ZipFile.ExtractToDirectory(dowloadPath, installPath);
+                        string expectedDir = toolsetInstallPath.Split(Path.DirectorySeparatorChar).Last();
+                        string comparableDir = expectedDir + "/";
 
-                        LogVerbose("--Deleting {0}", dowloadPath);
-                        File.Delete(dowloadPath);
+                        using (ZipArchive zip = ZipFile.Open(downloadPath, ZipArchiveMode.Read))
+                        {
+                            if (!zip.Entries.Any( entry => comparableDir == entry.FullName))
+                            {
+                                LogVerbose("--Did not find " + expectedDir + " dir in archive. Will create it");
+                                installPath = Path.Combine(installPath, expectedDir);
+                            }
+                        }
+
+                        LogVerbose("--Unzipping {0} to {1}", downloadPath, installPath);
+                        ZipFile.ExtractToDirectory(downloadPath, installPath);
+
+                        LogVerbose("--Deleting {0}", downloadPath);
+                        File.Delete(downloadPath);
                     }
                 );
             }
-            
+
             return toolsetInstallPath;
         }
 

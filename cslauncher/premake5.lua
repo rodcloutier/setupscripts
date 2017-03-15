@@ -16,7 +16,7 @@ project "LauncherLib"
 
     filter "configurations:Debug"
         defines { "DEBUG" }
-        symbols "On" 
+        symbols "On"
 
     filter "configurations:Release"
         defines { "NDEBUG" }
@@ -35,12 +35,12 @@ project "Launcher"
 
     filter "configurations:Debug"
         defines { "DEBUG" }
-        symbols "On" 
+        symbols "On"
 
    filter "configurations:Release"
         defines { "NDEBUG" }
         optimize "On"
-        symbols "Off" 
+        symbols "Off"
 
 project "Deployer"
     kind "ConsoleApp"
@@ -50,15 +50,19 @@ project "Deployer"
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
+    links     { "System.IO.Compression" }
     links     { "System.IO.Compression.FileSystem" }
     links     { "LauncherLib" }
+
+    filter { "system:macosx" }
+        links     { "System.Core" }
 
     files { "Deployer/**.cs" }
     files { "deployment.json" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
-        symbols "On" 
+        symbols "On"
 
     filter "configurations:Release"
         defines { "NDEBUG" }
