@@ -11,17 +11,17 @@ namespace CSLauncher.Deployer
                     Array.Exists(args, element => element.ToLower().Equals(longFormat));
         }
 
-        internal static string GetOptionValue(string[] args, string format)
+        internal static string GetOptionValue(string[] args, string format, string defaultValue=null)
         {
             string arg = Array.Find(args, element => element.ToLower().StartsWith(format));
             if (arg == null)
-                return arg;
+                return defaultValue;
             return arg.Remove(0, format.Length);
         }
 
         internal static void PrintUsage()
         {
-            Console.WriteLine("Deployer expect to read in the current directory a deployment.json file that defines");
+            Console.WriteLine("Deployer expect to read in deployment file that defines");
             Console.WriteLine("the files to deploy/install");
             Console.WriteLine("Usage: Deployer.exe [options]");
             Console.WriteLine("where:");
@@ -30,6 +30,7 @@ namespace CSLauncher.Deployer
             Console.WriteLine("\t-d,--dryrun\tParses and prepare the deployment but does not run the Package and Aliases steps");
             Console.WriteLine("\t-c,--clean\tDelete the deployment directory before doing the install");
             Console.WriteLine("\t--toolset\t");
+            Console.WriteLine("\t--config\tThe deployment configuration file. Default: deployment.json");
         }
 
         [STAThread]
@@ -42,6 +43,7 @@ namespace CSLauncher.Deployer
                 bool dryRun = HasOption(args, "-d", "--dryrun");
                 bool clean = HasOption(args, "-c", "--clean");
                 string toolset = GetOptionValue(args, "--toolset=");
+                string deploymentFile = GetOptionValue(args, "--config=", "deployment.json");
 
                 if (help)
                 {
@@ -49,8 +51,7 @@ namespace CSLauncher.Deployer
                     return 0;
                 }
 
-                string deploymentFile = "deployment.json";
-                if (! File.Exists(deploymentFile) )
+                if (!File.Exists(deploymentFile) )
                 {
                     throw new Exception("Expected file deployment.json not found in current directory");
                 }
