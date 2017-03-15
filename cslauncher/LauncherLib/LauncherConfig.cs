@@ -28,6 +28,9 @@ namespace CSLauncher.LauncherLib
         [DataMember(Name = "timeStamp")]
         public string TimeStamp;
 
+        [DataMember(Name = "type")]
+        public string Type;
+
         public LauncherConfig()
         {
             SetDefaults();
@@ -43,6 +46,7 @@ namespace CSLauncher.LauncherLib
         {
             NoWait = false;
             EnvVariables = new EnvVariable[] { };
+            Type = "exe";
         }
     }
 
