@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -81,6 +82,10 @@ namespace CSLauncher.Deployer
                     toolsetInstallPath = HandleUrlSource(toolset.UrlSource, installPath);
                 else if (toolset.NugetSource != null)
                     toolsetInstallPath = HandleNugetSource(toolset.NugetSource, installPath);
+                else if (toolset.GitSource != null)
+                {
+                    toolsetInstallPath = HandleGitSource(toolset.GitSource, installPath);
+                }
                 else
                     throw new Exception(string.Format("Toolset {0} missing source url and nuget", toolset));
 
@@ -252,6 +257,51 @@ namespace CSLauncher.Deployer
             throw new NotImplementedException();
         }
 
+        private void git(params string[] args)
+        {
+            var cmd = string.Join(" ", args);
+
+            var info = new ProcessStartInfo("git.exe", cmd);
+            info.UseShellExecute = false;
+            var proc = Process.Start(info);
+            proc.WaitForExit();
+            if (proc.ExitCode != 0)
+            {
+                throw new Exception(String.Format("Failed to execute git {0} command\n", cmd));
+            }
+        }
+
+        private string HandleGitSource(GitSource source, string installPath)
+        {
+            LogVerbose("--Preparing git source {0}", source.Url);
+
+            string projectName = source.Url.Split('/').Last().Replace(".git", string.Empty);
+            string toolsetInstallPath = Path.Combine(installPath, projectName + '-' + source.Commit);
+            
+            if (!Directory.Exists(toolsetInstallPath))
+            {
+                PackageSetupActions.Add(() =>
+                {
+                    LogVerbose("--cloning repository {0} in {1}", source.Url, toolsetInstallPath);
+                    git( "clone", source.Url, toolsetInstallPath);
+                    git( "-C", toolsetInstallPath, "checkout", source.Commit);
+                });
+            }
+            else
+            {
+                if (source.Commit == "master")
+                {
+                    PackageSetupActions.Add(() =>
+                    {
+                        LogVerbose("--Updating repository {0}", toolsetInstallPath);
+                        git("-C", toolsetInstallPath, "pull");
+                    });
+                }
+            }
+
+            return toolsetInstallPath;
+        }
+
         private Action CreateExeAliasSetupAction(LauncherConfig launcherConfig, string alias, string aliasPath)
         {
             return () =>
@@ -362,7 +412,7 @@ namespace CSLauncher.Deployer
 
             foreach (string alias in tool.Aliases)
             {
-                LogVerbose("----Preparing alias {0}", alias);
+                LogVerbose("--Preparing alias {0}", alias);
                 string aliasPath = Path.Combine(binPath, alias);
                 AliasSetupActions.Add(createAliasSetupAction(launcherConfig, alias, aliasPath));
             }

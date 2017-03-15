@@ -1,0 +1,23 @@
+{
+    "binPath": "f:\\apps",
+    "installPath": "f:\\apps\\packages",
+    "launcherPath": "Launcher.exe",
+    "launcherLibPath": "LauncherLib.dll",
+    "toolsets": [
+        {
+            "name": "swift",
+            "git": {
+                "url": "git@gitlab-ncsa.ubisoft.org:oversea/bash_swift.git"
+            },
+            "tools": [
+                {
+                    "launcherConfig": {
+                        "exePath": "bin\\swift",
+                        "type": "bash"
+                    },
+                    "aliases": ["swift"]
+                }
+            ]
+        }
+    ]
+}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
@@ -47,6 +48,32 @@ namespace CSLauncher.Deployer
     }
 
     [DataContract]
+    public class GitSource
+    {
+        [DataMember(Name = "url")]
+        public string Url;
+
+        [DataMember(Name = "commit")]
+        public string Commit;
+
+        public GitSource()
+        {
+            SetDefaults();
+        }
+
+        private void SetDefaults()
+        {
+            Commit = "master";
+        }
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext context)
+        {
+            SetDefaults();
+        }
+    }
+
+    [DataContract]
     public class ToolSet
     {
         [DataMember(Name = "name")]
@@ -57,6 +84,9 @@ namespace CSLauncher.Deployer
 
         [DataMember(Name = "nuget")]
         public NugetSource NugetSource;
+
+        [DataMember(Name = "git")]
+        public GitSource GitSource;            
 
         [DataMember(Name = "tools")]
         public Tool[] Tools;

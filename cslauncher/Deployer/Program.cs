@@ -105,7 +105,7 @@ namespace CSLauncher.Deployer
                 }
 
                 Deployment deployment = DeploymentSerializer.Read(deploymentFile, options.BinPath, options.InstallPath);
-
+                
                 if (options.GetBinPath)
                 {
                     Console.WriteLine(deployment.BinPath);
@@ -119,10 +119,10 @@ namespace CSLauncher.Deployer
                 }
                 else
                 {
-                    deployer.Prepare(options.ToolSet);
+                deployer.Prepare(options.ToolSet);
 
-                    if (!options.DryRun)
-                    {
+                if (!options.DryRun)
+                {
                         deployer.ProcessPackages();
                         deployer.ProcessAliases();
                         deployer.ProcessCommands();
