@@ -26,6 +26,15 @@ namespace CSLauncher.Deployer
         [Option("toolset")]
         public string ToolSet { get; set; }
 
+        [Option("binpath", HelpText = "Path to use to override 'binPath' in the config file")]
+        public string BinPath { get; set; }
+
+        [Option("installpath", HelpText = "Path to use to override 'installPath' in the config file")]
+        public string InstallPath { get; set; }
+
+        [Option("get-binPath", HelpText= "returns the config 'binPath' value without doing any install")]
+        public bool GetBinPath { get; set;  }
+
         [ValueList(typeof(List<string>), MaximumElements = 1)]
         public IList<string> ConfigFile { get; set; }
 
@@ -95,7 +104,13 @@ namespace CSLauncher.Deployer
                     throw new Exception(string.Format("File '{0}' not found in current directory", deploymentFile));
                 }
 
-                Deployment deployment = DeploymentSerializer.Read(deploymentFile);
+                Deployment deployment = DeploymentSerializer.Read(deploymentFile, options.BinPath, options.InstallPath);
+
+                if (options.GetBinPath)
+                {
+                    Console.WriteLine(deployment.BinPath);
+                    return 0;
+                }
 
                 var deployer = new Deployer(deployment, options.Verbose);
                 if (options.Clean)
