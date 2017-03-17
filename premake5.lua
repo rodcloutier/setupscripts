@@ -56,9 +56,10 @@ project "Deployer"
 
     filter { "system:macosx" }
         links     { "System.Core" }
+    filter {}
 
     files { "Deployer/**.cs" }
-    files { "deployment.json" }
+    files { "*.json" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -68,6 +69,7 @@ project "Deployer"
         defines { "NDEBUG" }
         optimize "On"
         symbols "Off"
+    filter {}
 
     configuration "deployment.json"
         buildaction "Copy"
