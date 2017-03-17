@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace CSLauncher.Deployer
@@ -26,11 +27,19 @@ namespace CSLauncher.Deployer
             Console.WriteLine("Usage: Deployer.exe [options]");
             Console.WriteLine("where:");
             Console.WriteLine("\t-h,--help\tPrint this help");
+            Console.WriteLine("\t--version\tPrint the version.");
             Console.WriteLine("\t-v,--verbose\tIncreases log verbosity");
             Console.WriteLine("\t-d,--dryrun\tParses and prepare the deployment but does not run the Package and Aliases steps");
             Console.WriteLine("\t-c,--clean\tDelete the deployment directory before doing the install");
             Console.WriteLine("\t--toolset\t");
             Console.WriteLine("\t--config\tThe deployment configuration file. Default: deployment.json");
+        }
+
+        internal static void PrintVersion()
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            Console.WriteLine(fvi.FileVersion);
         }
 
         [STAThread]
@@ -39,6 +48,7 @@ namespace CSLauncher.Deployer
             try
             {
                 bool help = HasOption(args, "-h", "--help");
+                bool version = HasOption(args, "--version", "--version");
                 bool verbose = HasOption(args, "-v", "--verbose");
                 bool dryRun = HasOption(args, "-d", "--dryrun");
                 bool clean = HasOption(args, "-c", "--clean");
@@ -48,6 +58,12 @@ namespace CSLauncher.Deployer
                 if (help)
                 {
                     PrintUsage();
+                    return 0;
+                }
+
+                if (version)
+                {
+                    PrintVersion();
                     return 0;
                 }
 

@@ -54,9 +54,6 @@ project "Deployer"
     links     { "System.IO.Compression.FileSystem" }
     links     { "LauncherLib" }
 
-    filter { "system:macosx" }
-        links     { "System.Core" }
-
     files { "Deployer/**.cs" }
     files { "deployment.json" }
 
