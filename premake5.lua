@@ -47,6 +47,7 @@ project "Deployer"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
     -- nuget     { "NuGet.Core:2.14" }
+    nuget     { "CommandLineParser:1.9.71" }
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
