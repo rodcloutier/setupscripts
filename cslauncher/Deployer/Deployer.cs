@@ -90,13 +90,20 @@ namespace CSLauncher.Deployer
                 }
             }
         }
-
-        public void ProcessPackages(bool clean)
+        public void Clean()
         {
-            if (clean && Directory.Exists(Deployment.InstallPath))
+            if (Directory.Exists(Deployment.InstallPath))
             {
                 Directory.Delete(Deployment.InstallPath, true);
             }
+            if (Directory.Exists(Deployment.BinPath))
+            {
+                Directory.Delete(Deployment.BinPath, true);
+            }
+        }
+        public void ProcessPackages()
+        {
+            
             Directory.CreateDirectory(Deployment.InstallPath);
 
             var tasks = new List<Task>();
@@ -108,12 +115,8 @@ namespace CSLauncher.Deployer
             Task.WaitAll(tasks.ToArray());
         }
 
-        public void ProcessAliases(bool clean)
+        public void ProcessAliases()
         {
-            if (clean && Directory.Exists(Deployment.BinPath))
-            {
-                Directory.Delete(Deployment.BinPath, true);
-            }
             Directory.CreateDirectory(Deployment.BinPath);
 
             string launcherLibPath = Path.Combine(Deployment.BinPath, Path.GetFileName(Deployment.LauncherLibPath));

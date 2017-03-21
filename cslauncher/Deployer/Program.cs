@@ -17,10 +17,10 @@ namespace CSLauncher.Deployer
         [Option('v', "verbose", HelpText = "Increase log verbosity")]
         public bool Verbose { get; set; }
 
-        [Option('d', "dryrun", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
+        [Option('d', "dryrun", MutuallyExclusiveSet = "zero", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
         public bool DryRun { get; set; }
 
-        [Option('c', "clean", HelpText = "Delete the deployment directory before doing the install")]
+        [Option('c', "clean", MutuallyExclusiveSet = "zero", HelpText = "Delete the deployment directories")]
         public bool Clean { get; set; }
 
         [Option("toolset")]
@@ -66,7 +66,15 @@ namespace CSLauncher.Deployer
 #endif
             {
                 var options = new Options();
-                var isValid = CommandLine.Parser.Default.ParseArgumentsStrict(args, options);
+                var parser = new CommandLine.Parser(
+                    s =>
+                    {
+                        s.IgnoreUnknownArguments = false;
+                        s.MutuallyExclusive = true;
+                        s.CaseSensitive = true;
+                        s.HelpWriter = Console.Error;
+                    });
+                var isValid = parser.ParseArgumentsStrict(args, options);
                 if (!isValid )
                 {
                     return 1;
@@ -90,13 +98,20 @@ namespace CSLauncher.Deployer
                 Deployment deployment = DeploymentSerializer.Read(deploymentFile);
 
                 var deployer = new Deployer(deployment, options.Verbose);
-                deployer.Prepare(options.ToolSet);
-
-                if (!options.DryRun)
+                if (options.Clean)
                 {
-                    deployer.ProcessPackages(options.Clean);
-                    deployer.ProcessAliases(options.Clean);
-                    deployer.ProcessCommands();
+                    deployer.Clean();
+                }
+                else
+                {
+                    deployer.Prepare(options.ToolSet);
+
+                    if (!options.DryRun)
+                    {
+                        deployer.ProcessPackages();
+                        deployer.ProcessAliases();
+                        deployer.ProcessCommands();
+                    }
                 }
 
                 return 0;
