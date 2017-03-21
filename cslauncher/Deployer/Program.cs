@@ -111,6 +111,7 @@ namespace CSLauncher.Deployer
                         deployer.ProcessPackages();
                         deployer.ProcessAliases();
                         deployer.ProcessCommands();
+                        deployer.CleanUnused();
                     }
                 }
 
