@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+
 using CSLauncher.LauncherLib;
 using System;
 
@@ -99,10 +100,31 @@ namespace CSLauncher.Deployer
 
         public static Deployment Read(string path)
         {
-            FileStream fileStream = new FileStream(path, FileMode.Open);
+            object objDeployment = null;
+
+            using (FileStream fileStream = new FileStream(path, FileMode.Open))
+            {
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    // Convert to JSON
+                    var serializerBuilder = new SerializerBuilder();
+                    serializerBuilder.JsonCompatible();
+
+                    var serializer = serializerBuilder.Build();
+                    var deserializer = new Deserializer();
+                    var writer = new StreamWriter(stream);
+
+                    serializer.Serialize(writer, deserializer.Deserialize(new StreamReader(fileStream)));
+                    writer.Flush();
+
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    // Deserialize with the contract
             DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Deployment));
-            object objDeployment = jsonSerializer.ReadObject(fileStream);
-            fileStream.Close();
+                    objDeployment = jsonSerializer.ReadObject(stream);
+                }
+            }
+
             Deployment dep = objDeployment as Deployment;
             dep.FileDateTime = File.GetLastWriteTimeUtc(path);
             dep.LauncherPath = RootPath(dep.LauncherPath);
