@@ -1,7 +1,7 @@
 -- premake5.lua
 newaction {
     trigger     = "paket",
-    description = "running paket to add the necessary rependencies",
+    description = "running paket to add the necessary dependencies",
 
     onWorkspace = function(wks)
         --runpaket(wks.location)
@@ -53,7 +53,7 @@ workspace "CSLauncher"
     configurations { "Debug", "Release" }
     architecture "x86_64"
     location "Build"
-    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71" })
+    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71", "YamlDotNet >= 4.1.0" })
 
 project "LauncherLib"
     kind "SharedLib"
@@ -104,8 +104,9 @@ project "Deployer"
     location "Build/Deployer"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
-    nugetreferences ( "Build/Deployer", { "CommandLineParser" } )
-
+    -- nuget     { "NuGet.Core:2.14" }
+    -- nuget     { "CommandLineParser:1.9.71" }
+    -- nuget     { "CommandLineParser:4.1.0" }
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
