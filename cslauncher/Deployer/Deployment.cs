@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
 using CSLauncher.LauncherLib;
+using YamlDotNet.Serialization;
 
 namespace CSLauncher.Deployer
 {
@@ -120,7 +121,7 @@ namespace CSLauncher.Deployer
                     stream.Seek(0, SeekOrigin.Begin);
 
                     // Deserialize with the contract
-            DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Deployment));
+                    DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Deployment));
                     objDeployment = jsonSerializer.ReadObject(stream);
                 }
             }
