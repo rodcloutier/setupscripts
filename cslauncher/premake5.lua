@@ -104,9 +104,8 @@ project "Deployer"
     location "Build/Deployer"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
-    -- nuget     { "NuGet.Core:2.14" }
-    -- nuget     { "CommandLineParser:1.9.71" }
-    -- nuget     { "CommandLineParser:4.1.0" }
+    nugetreferences ( "Build/Deployer", { "CommandLineParser", "YamlDotNet" } )
+
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
