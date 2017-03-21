@@ -6,8 +6,24 @@ using CSLauncher.LauncherLib;
 namespace CSLauncher.Deployer
 {
     [DataContract]
+    public class Command
+    {
+        [DataMember(Name = "file")]
+        public string FileName;
+
+        [DataMember(Name = "arguments")]
+        public string Arguments;
+
+        [DataMember(Name = "envVariables")]
+        public EnvVariable[] EnvVariables;
+    }
+
+    [DataContract]
     public class Tool
     {
+        [DataMember(Name = "command")]
+        public Command Command;
+
         [DataMember(Name = "launcherConfig")]
         public LauncherConfig LauncherConfig;
 
@@ -58,6 +74,9 @@ namespace CSLauncher.Deployer
 
         [DataMember(Name = "launcherLibPath")]
         public string LauncherLibPath;
+
+        [DataMember(Name = "httpProxy")]
+        public string HttpProxy;
 
         [DataMember(Name = "toolsets")]
         public ToolSet[] ToolSets;
