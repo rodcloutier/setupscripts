@@ -65,6 +65,7 @@ namespace CSLauncher.Deployer
                 {
                     deployer.ProcessPackages(clean);
                     deployer.ProcessAliases(clean);
+                    deployer.ProcessCommands();
                 }
 
                 return 0;
