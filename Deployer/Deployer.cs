@@ -45,10 +45,10 @@ namespace CSLauncher.Deployer
         public void Prepare(string toolsetFilter)
         {
             string binPath = Path.GetFullPath(Deployment.BinPath);
-            LogVerbose("Using bin path:{0}", binPath);
+            Log("Using bin path:{0}", binPath);
 
             string installPath = Path.GetFullPath(Deployment.InstallPath);
-            LogVerbose("Using install path:{0}", installPath);
+            Log("Using install path:{0}", installPath);
 
             if (installPath.ToLower() == binPath.ToLower())
                 throw new Exception("The install path and the bin path cannot point to the same directory");

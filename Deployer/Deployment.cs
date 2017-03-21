@@ -1,9 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 
 using CSLauncher.LauncherLib;
-using System;
 
 namespace CSLauncher.Deployer
 {
@@ -98,7 +98,7 @@ namespace CSLauncher.Deployer
             return path;
         }
 
-        public static Deployment Read(string path)
+        public static Deployment Read(string path, string optionBinPath, string optionInstallPath)
         {
             object objDeployment = null;
 
@@ -129,6 +129,31 @@ namespace CSLauncher.Deployer
             dep.FileDateTime = File.GetLastWriteTimeUtc(path);
             dep.LauncherPath = RootPath(dep.LauncherPath);
             dep.LauncherLibPath = RootPath(dep.LauncherLibPath);
+
+            if (optionBinPath != null )
+            {
+                dep.BinPath = optionBinPath;
+            }
+
+            if ( dep.BinPath == null )
+            {
+                dep.BinPath = Path.Combine("%USERPROFILE%", "bin");
+            }
+
+            if (optionInstallPath != null )
+            {
+                dep.InstallPath = optionInstallPath;
+            }
+    
+            if (dep.InstallPath == null )
+            {
+                dep.InstallPath = Path.Combine(dep.BinPath, "packages");
+            }
+
+            dep.LauncherPath = Environment.ExpandEnvironmentVariables(dep.LauncherPath);
+            dep.LauncherLibPath = Environment.ExpandEnvironmentVariables(dep.LauncherLibPath);
+            dep.BinPath = Environment.ExpandEnvironmentVariables(dep.BinPath);
+            dep.InstallPath = Environment.ExpandEnvironmentVariables(dep.InstallPath);
 
             return dep;
         }
