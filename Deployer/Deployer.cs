@@ -147,7 +147,7 @@ namespace CSLauncher.Deployer
                 if (!File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != Deployment.FileDateTime)
                 {
                     Log("Deleting unused packate {0}", directory);
-                    Directory.Delete(Deployment.InstallPath, true);
+                    Directory.Delete(directory, true);
                 }
             }
 
