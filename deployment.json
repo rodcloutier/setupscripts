@@ -1,6 +1,6 @@
 {
-    "binPath": "C:\\Users\\jelmansouri\\bin",
-    "installPath": "C:\\Users\\jelmansouri\\bin\\packages",
+    "binPath": "C:\\Users\\jelmansouri\\bin2",
+    "installPath": "C:\\Users\\jelmansouri\\bin2\\packages",
     "launcherPath": "Launcher.exe",
     "launcherLibPath": "LauncherLib.dll",
     "toolsets": [
@@ -42,7 +42,21 @@
                     "launcherConfig": {
                         "exePath": "Scripts\\pip.exe",
                         "noWait": false,
-                        "envVariables": []
+                        "envVariables": [ ]
+                    },
+                    "command": {
+                        "file": "python.exe",
+                        "arguments": "-m pip install -U pip",
+                        "envVariables": [
+                            {
+                                "key": "HTTP_PROXY",
+                                "value": "{httpProxy}"
+                            },
+                            {
+                                "key": "HTTPS_PROXY",
+                                "value": "{httpProxy}"
+                            }
+                        ]
                     },
                     "aliases": ["pip", "pip3", "pip35"]
                 },
@@ -51,7 +65,21 @@
                     "launcherConfig": {
                         "exePath": "Scripts\\pylint.exe",
                         "noWait": false,
-                        "envVariables": []
+                        "envVariables": [ ]
+                    },
+                    "command": {
+                        "file": "python.exe",
+                        "arguments": "-m pip install pylint",
+                        "envVariables": [
+                            {
+                                "key": "HTTP_PROXY",
+                                "value": "{httpProxy}"
+                            },
+                            {
+                                "key": "HTTPS_PROXY",
+                                "value": "{httpProxy}"
+                            }
+                        ]
                     },
                     "aliases": ["pylint", "pylint3", "pylint35"]
                 }
@@ -104,7 +132,7 @@
         },
         {
             "name": "premake",
-            "url": "file://C:/DevTools/sources/premake-5.10.zip",
+            "url": "file://C:/DevTools/sources/premake-5.11.zip",
             "tools": [
                 {
                     "launcherConfig": {
@@ -140,7 +168,7 @@
         },
         {
             "name": "vscode",
-            "url": "file://C:/DevTools/sources/VSCode-win32-1.8.1.zip",
+            "url": "file://C:/DevTools/sources/VSCode-win32-1.10.2.zip",
             "tools": [
                 {
                     "launcherConfig": {
@@ -154,7 +182,7 @@
         },
         {
             "name": "kubectl",
-            "url": "file://C:/DevTools/sources/kubectl-0.18.2.zip",
+            "url": "file://C:/DevTools/sources/kubectl-0.15.2.zip",
             "tools": [
                 {
                     "launcherConfig": {
@@ -168,7 +196,7 @@
         },
         {
             "name": "minikube",
-            "url": "file://C:/DevTools/sources/minikube-windows-amd64-0.15.0.zip",
+            "url": "file://C:/DevTools/sources/minikube-windows-amd64-0.17.1.zip",
             "tools": [
                 {
                     "launcherConfig": {
@@ -182,7 +210,7 @@
         },
         {
             "name": "golang",
-            "url": "file://C:/DevTools/sources/go1.7.4.windows-amd64.zip",
+            "url": "file://C:/DevTools/sources/go1.8.windows-amd64.zip",
             "tools": [
                 {
                     "launcherConfig": {
@@ -195,7 +223,7 @@
                             }
                         ]
                     },
-                    "aliases": ["go", "go17"]
+                    "aliases": ["go", "go18"]
                 }
             ]
         }

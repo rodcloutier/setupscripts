@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using CSLauncher.LauncherLib;
 using System.Net;
 using System.IO.Compression;
+using System.Diagnostics;
+using System.Collections.Specialized;
+using System.Text.RegularExpressions;
 
 namespace CSLauncher.Deployer
 {
@@ -28,6 +31,9 @@ namespace CSLauncher.Deployer
 
         List<Action> PackageSetupActions = new List<Action>();
         List<Action> AliasSetupActions = new List<Action>();
+        List<Action> CommandActions = new List<Action>();
+        StringDictionary ConfigValuesMapping = new StringDictionary();
+
 
         public Deployer(Deployment deployment, bool verbose)
         {
@@ -52,6 +58,14 @@ namespace CSLauncher.Deployer
 
             if (!File.Exists(Deployment.LauncherLibPath))
                 throw new Exception("Could not find the launcher lib");
+
+            // todo automatically fill this from the json file
+            AddConfigValueMapping("binPath", binPath);
+            AddConfigValueMapping("installPath", binPath);
+            if (!string.IsNullOrEmpty(Deployment.HttpProxy))
+            {
+                AddConfigValueMapping("httpProxy", Deployment.HttpProxy);
+            }
 
             LogVerbose("Using launcher path:{0}", Deployment.LauncherPath);
 
@@ -112,6 +126,31 @@ namespace CSLauncher.Deployer
             }
 
             Task.WaitAll(tasks.ToArray());
+        }
+
+        public void ProcessCommands()
+        {
+            foreach(var command in CommandActions)
+            {
+                command.Invoke();
+            }
+        }
+
+        private void AddConfigValueMapping(string key, string value)
+        {
+            ConfigValuesMapping.Add("{"+key+"}", value);
+        }
+
+        private string GetFinalValue(string str)
+        {
+            string finalVal = str;
+            MatchCollection mc = Regex.Matches(str, @"\{(.*?)\}");
+            foreach (Match m in mc)
+            {
+                finalVal = finalVal.Replace(m.ToString(), ConfigValuesMapping[m.ToString()]);
+            }
+
+            return finalVal;
         }
 
         private string HandleUrlSource(string urlSource, string installPath)
@@ -223,7 +262,28 @@ namespace CSLauncher.Deployer
                 }
             };
         }
-          
+        
+        private Action CreateCommandAction(string binPath, string file, string arguments, EnvVariable[] envVariables)
+        {
+            return () =>
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.UseShellExecute = false;
+                startInfo.WorkingDirectory = Environment.CurrentDirectory;
+                startInfo.FileName = Path.Combine(binPath, file);
+                startInfo.Arguments = arguments;
+
+                foreach (EnvVariable envVariable in envVariables)
+                {
+                    string val = GetFinalValue(envVariable.Value);
+                    Utils.AddOrSetEnvVariable(startInfo.EnvironmentVariables, envVariable.Key, val);
+                }
+
+                Process p = Process.Start(startInfo);
+                p.WaitForExit();
+            };
+        }
+
         private void HandleTool(ToolSet toolset, Tool tool, string binPath, string toolsetInstallPath)
         {
             LogVerbose("--Preparing tool {0}", toolset.Name);
@@ -236,8 +296,7 @@ namespace CSLauncher.Deployer
 
             for (int i = 0; i < launcherConfig.EnvVariables.Length; ++i)
             {
-                if (launcherConfig.EnvVariables[i].Value.Contains("{installPath}"))
-                    launcherConfig.EnvVariables[i].Value = launcherConfig.EnvVariables[i].Value.Replace("{installPath}", toolsetInstallPath);
+                launcherConfig.EnvVariables[i].Value = GetFinalValue(launcherConfig.EnvVariables[i].Value);
             }
 
             Func<LauncherConfig, string, string, Action> createAliasSetupAction;
@@ -251,6 +310,11 @@ namespace CSLauncher.Deployer
                     break;
                 default:
                     throw new Exception("Invalid launcherConfig.type: " + launcherConfig.Type);
+            }
+
+            if (tool.Command != null)
+            {
+                CommandActions.Add(CreateCommandAction(binPath, tool.Command.FileName, tool.Command.Arguments, tool.Command.EnvVariables));
             }
 
             foreach (string alias in tool.Aliases)
