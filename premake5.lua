@@ -1,13 +1,66 @@
 -- premake5.lua
+newaction {
+    trigger     = "paket",
+    description = "running paket to add the necessary rependencies",
+
+    onWorkspace = function(wks)
+        --runpaket(wks.location)
+	end,
+
+    execute = function()
+        runpaket("Build")
+    end
+}
+
+function runpaket(wslocation)
+    print("Running Paket")
+    local cwd = os.getcwd()
+    os.chdir(cwd .. "/" .. wslocation)
+    os.execute("paket install")
+    os.chdir(cwd)
+end
+
+function nugetdependencies(wslocation, list)
+    local paketdependencies = "source https://www.nuget.org/api/v2" .. "\r\n"
+
+    for _, val in pairs(list) do
+        paketdependencies = paketdependencies .. "nuget" .. val .. "\r\n"
+    end
+
+    ok, err = os.writefile_ifnotequal(paketdependencies, wslocation ..  "/paket.dependencies")
+
+    -- local action = premake.action.current()
+    -- packetonend = action.onEnd
+    --action.onEnd = function()
+    --    if packetonend ~= nil then
+    --        packetonend()
+    --    end
+    --    runpaket(wslocation)
+    --end
+end
+
+function nugetreferences(prjlocation, list)
+    local paketreferences = ""
+
+    for _, val in pairs(list) do
+        paketreferences = paketreferences ..  val .. "\r\n"
+    end
+
+    ok, err = os.writefile_ifnotequal(paketreferences, prjlocation ..  "/paket.references")
+end
+
 workspace "CSLauncher"
     configurations { "Debug", "Release" }
     architecture "x86_64"
     location "Build"
+    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71" })
 
 project "LauncherLib"
     kind "SharedLib"
+    location "Build/LauncherLib"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
+
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
@@ -26,8 +79,10 @@ project "LauncherLib"
 
 project "Launcher"
     kind "ConsoleApp"
+    location "Build/Launcher"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
+
     links     { "System" }
     links     { "LauncherLib" }
 
@@ -42,14 +97,16 @@ project "Launcher"
         optimize "On"
         symbols "Off"
 
+
+
 project "Deployer"
     kind "ConsoleApp"
+    location "Build/Deployer"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
-    -- nuget     { "NuGet.Core:2.14" }
-    -- nuget     { "CommandLineParser:1.9.71" }
-    links     { "System" }
+    nugetreferences ( "Build/Deployer", { "CommandLineParser" } )
 
+    links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
     links     { "System.IO.Compression" }
