@@ -2,6 +2,7 @@
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using CSLauncher.LauncherLib;
+using System;
 
 namespace CSLauncher.Deployer
 {
@@ -63,6 +64,8 @@ namespace CSLauncher.Deployer
     [DataContract]
     public class Deployment
     {
+        public DateTime FileDateTime;
+
         [DataMember(Name = "binPath")]
         public string BinPath;
 
@@ -101,7 +104,7 @@ namespace CSLauncher.Deployer
             object objDeployment = jsonSerializer.ReadObject(fileStream);
             fileStream.Close();
             Deployment dep = objDeployment as Deployment;
-
+            dep.FileDateTime = File.GetLastWriteTimeUtc(path);
             dep.LauncherPath = RootPath(dep.LauncherPath);
             dep.LauncherLibPath = RootPath(dep.LauncherLibPath);
 

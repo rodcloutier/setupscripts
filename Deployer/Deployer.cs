@@ -101,9 +101,9 @@ namespace CSLauncher.Deployer
                 Directory.Delete(Deployment.BinPath, true);
             }
         }
+
         public void ProcessPackages()
-        {
-            
+        {   
             Directory.CreateDirectory(Deployment.InstallPath);
 
             var tasks = new List<Task>();
@@ -120,7 +120,7 @@ namespace CSLauncher.Deployer
             Directory.CreateDirectory(Deployment.BinPath);
 
             string launcherLibPath = Path.Combine(Deployment.BinPath, Path.GetFileName(Deployment.LauncherLibPath));
-            CopyFile(Deployment.LauncherLibPath, launcherLibPath);
+            CopyFileIfNewer(Deployment.LauncherLibPath, launcherLibPath);
 
             var tasks = new List<Task>();
             foreach (var aliasAction in AliasSetupActions)
@@ -136,6 +136,35 @@ namespace CSLauncher.Deployer
             foreach(var command in CommandActions)
             {
                 command.Invoke();
+            }
+        }
+
+        public void CleanUnused()
+        {
+            foreach(string directory in Directory.GetDirectories(Deployment.InstallPath))
+            {
+                string sentinelFile = Path.Combine(directory, "__deployer__");
+                if (!File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != Deployment.FileDateTime)
+                {
+                    Log("Deleting unused packate {0}", directory);
+                    Directory.Delete(Deployment.InstallPath, true);
+                }
+            }
+
+            foreach (string file in Directory.GetFiles(Deployment.BinPath, "*.cfg"))
+            {
+                if (File.GetLastWriteTimeUtc(file) != Deployment.FileDateTime)
+                {
+                    Log("Deleting unused alias {0}", Path.GetFileNameWithoutExtension(file));
+
+                    File.Delete(file);
+                    string exeFile = Path.ChangeExtension(file, ".exe");
+                    if (File.Exists(exeFile))
+                        File.Delete(exeFile);
+                    string shFile = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
+                    if (File.Exists(shFile))
+                        File.Delete(shFile);
+                }
             }
         }
 
@@ -165,10 +194,10 @@ namespace CSLauncher.Deployer
             string zipFileNameWithoutExt = zipFileName.Substring(0, zipFileName.Length - 4);
             string toolsetInstallPath = Path.Combine(installPath, zipFileNameWithoutExt);
             string downloadPath = Path.Combine(installPath, zipFileName);
-
-            if (!Directory.Exists(toolsetInstallPath))
-            {
-                PackageSetupActions.Add( () =>
+            
+            PackageSetupActions.Add(() =>
+                {
+                    if (!Directory.Exists(toolsetInstallPath))
                     {
                         Log("Processing zip file {0}", zipFileName);
 
@@ -183,7 +212,7 @@ namespace CSLauncher.Deployer
 
                         using (ZipArchive zip = ZipFile.Open(downloadPath, ZipArchiveMode.Read))
                         {
-                            if (!zip.Entries.Any( entry => comparableDir == entry.FullName))
+                            if (!zip.Entries.Any(entry => comparableDir == entry.FullName))
                             {
                                 LogVerbose("--Did not find " + expectedDir + " dir in archive. Will create it");
                                 installPath = Path.Combine(installPath, expectedDir);
@@ -196,8 +225,11 @@ namespace CSLauncher.Deployer
                         LogVerbose("--Deleting {0}", downloadPath);
                         File.Delete(downloadPath);
                     }
-                );
-            }
+                    string sentinelFile = Path.Combine(toolsetInstallPath, "__deployer__");
+                    using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
+                    File.SetLastWriteTimeUtc(sentinelFile, Deployment.FileDateTime);
+                }
+            );
 
             return toolsetInstallPath;
         }
@@ -232,6 +264,7 @@ namespace CSLauncher.Deployer
                 string configPath = aliasPath + ".cfg";
                 LogVerbose("--Serializing config file to {0}", configPath);
                 AppInfoSerializer.Write(configPath, launcherConfig);
+                File.SetLastWriteTimeUtc(configPath, Deployment.FileDateTime);
             };
         }
 
@@ -263,6 +296,13 @@ namespace CSLauncher.Deployer
                     file.WriteLine("# Call the actual tool");
                     file.WriteLine("source {0}", nixPath);
                 }
+
+                string dummyConfigPath = aliasPath + ".cfg";
+                using (StreamWriter file = new StreamWriter(dummyConfigPath))
+                {
+                    file.WriteLine("dummy config file");
+                }
+                File.SetLastWriteTimeUtc(dummyConfigPath, Deployment.FileDateTime);
             };
         }
         
@@ -335,6 +375,11 @@ namespace CSLauncher.Deployer
                 var fileInfo = new FileInfo(source);
                 fileInfo.CopyTo(target, overwrite);
             }
+        }
+
+        private static void CopyFileIfNewer(string source, string target)
+        {
+            CopyFile(source, target, !File.Exists(target) || File.GetLastWriteTimeUtc(source) > File.GetLastWriteTimeUtc(target));
         }
 
         private void LogVerbose(string format, params object[] arg)
