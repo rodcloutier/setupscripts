@@ -1,40 +1,56 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
+
+using CommandLine;
+using CommandLine.Text;
+using System.Collections.Generic;
 
 namespace CSLauncher.Deployer
 {
+    class Options
+    {
+        [Option("version", HelpText = "Shows the version")]
+        public bool Version { get; set; }
+        
+        [Option('v', "verbose", HelpText = "Increase log verbosity")]
+        public bool Verbose { get; set; }
+
+        [Option('d', "dryrun", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
+        public bool DryRun { get; set; }
+
+        [Option('c', "clean", HelpText = "Delete the deployment directory before doing the install")]
+        public bool Clean { get; set; }
+
+        [Option("toolset")]
+        public string ToolSet { get; set; }
+
+        [ValueList(typeof(List<string>), MaximumElements = 1)]
+        public IList<string> ConfigFile { get; set; }
+
+        [HelpOption]
+        public string GetUsage()
+        {
+            var help = new HelpText
+            {
+                Heading  = new HeadingInfo("<<app title>>", "<<app version>>"),
+                Copyright = new CopyrightInfo("<<app author>>", 2017),
+                AdditionalNewLineAfterOption = true,
+                AddDashesToOption = true
+            };
+            help.AddPreOptionsLine("Deployer expect to read in deployment file that defines the files to deploy/install");
+            help.AddPreOptionsLine("If no config file is provided, deployment.json will be used ");
+            help.AddPreOptionsLine("Usage: Deployer.exe [options] <FILE>");
+            help.AddPreOptionsLine("  where:");
+
+            help.AddOptions(this);
+            return help;
+        }
+    }
+    
     class Program
     {
-        internal static bool HasOption(string[] args, string shortFormat, string longFormat)
-        {
-            return Array.Exists(args, element => element.ToLower().Equals(shortFormat)) ||
-                    Array.Exists(args, element => element.ToLower().Equals(longFormat));
-        }
-
-        internal static string GetOptionValue(string[] args, string format, string defaultValue=null)
-        {
-            string arg = Array.Find(args, element => element.ToLower().StartsWith(format));
-            if (arg == null)
-                return defaultValue;
-            return arg.Remove(0, format.Length);
-        }
-
-        internal static void PrintUsage()
-        {
-            Console.WriteLine("Deployer expect to read in deployment file that defines");
-            Console.WriteLine("the files to deploy/install");
-            Console.WriteLine("Usage: Deployer.exe [options]");
-            Console.WriteLine("where:");
-            Console.WriteLine("\t-h,--help\tPrint this help");
-            Console.WriteLine("\t--version\tPrint the version.");
-            Console.WriteLine("\t-v,--verbose\tIncreases log verbosity");
-            Console.WriteLine("\t-d,--dryrun\tParses and prepare the deployment but does not run the Package and Aliases steps");
-            Console.WriteLine("\t-c,--clean\tDelete the deployment directory before doing the install");
-            Console.WriteLine("\t--toolset\t");
-            Console.WriteLine("\t--config\tThe deployment configuration file. Default: deployment.json");
-        }
-
         internal static void PrintVersion()
         {
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
@@ -45,52 +61,53 @@ namespace CSLauncher.Deployer
         [STAThread]
         static int Main(string[] args)
         {
+#if !DEBUG
             try
+#endif
             {
-                bool help = HasOption(args, "-h", "--help");
-                bool version = HasOption(args, "--version", "--version");
-                bool verbose = HasOption(args, "-v", "--verbose");
-                bool dryRun = HasOption(args, "-d", "--dryrun");
-                bool clean = HasOption(args, "-c", "--clean");
-                string toolset = GetOptionValue(args, "--toolset=");
-                string deploymentFile = GetOptionValue(args, "--config=", "deployment.json");
-
-                if (help)
+                var options = new Options();
+                var isValid = CommandLine.Parser.Default.ParseArgumentsStrict(args, options);
+                if (!isValid )
                 {
-                    PrintUsage();
-                    return 0;
+                    return 1;
                 }
 
-                if (version)
+                if (options.Version)
                 {
                     PrintVersion();
                     return 0;
                 }
 
+                string deploymentFile = "deployment.json";
+                if (options.ConfigFile.Count > 0)
+                    deploymentFile = options.ConfigFile[0];
+
                 if (!File.Exists(deploymentFile) )
                 {
-                    throw new Exception("Expected file deployment.json not found in current directory");
+                    throw new Exception(string.Format("File '{0}' not found in current directory", deploymentFile));
                 }
 
                 Deployment deployment = DeploymentSerializer.Read(deploymentFile);
 
-                var deployer = new Deployer(deployment, verbose);
-                deployer.Prepare(toolset);
+                var deployer = new Deployer(deployment, options.Verbose);
+                deployer.Prepare(options.ToolSet);
 
-                if (!dryRun)
+                if (!options.DryRun)
                 {
-                    deployer.ProcessPackages(clean);
-                    deployer.ProcessAliases(clean);
+                    deployer.ProcessPackages(options.Clean);
+                    deployer.ProcessAliases(options.Clean);
                     deployer.ProcessCommands();
                 }
 
                 return 0;
             }
+#if !DEBUG
             catch (Exception e)
             {
                 Console.WriteLine("Fatal error -> " + e.Message);
                 return -1;
             }
+#endif
         }
     }
 }
