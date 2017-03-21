@@ -146,7 +146,7 @@ namespace CSLauncher.Deployer
                 string sentinelFile = Path.Combine(directory, "__deployer__");
                 if (!File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != Deployment.FileDateTime)
                 {
-                    Log("Deleting unused packate {0}", directory);
+                    Log("Deleting unused package {0}", directory);
                     Directory.Delete(directory, true);
                 }
             }
