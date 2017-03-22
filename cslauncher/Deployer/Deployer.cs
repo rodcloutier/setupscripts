@@ -44,24 +44,9 @@ namespace CSLauncher.Deployer
 
         public void Prepare(string toolsetFilter)
         {
-            string binPath = Path.GetFullPath(Deployment.BinPath);
-            Log("Using bin path:{0}", binPath);
-
-            string installPath = Path.GetFullPath(Deployment.InstallPath);
-            Log("Using install path:{0}", installPath);
-
-            if (installPath.ToLower() == binPath.ToLower())
-                throw new Exception("The install path and the bin path cannot point to the same directory");
-
-            if (!File.Exists(Deployment.LauncherPath))
-                throw new Exception("Could not find the launcher app");
-
-            if (!File.Exists(Deployment.LauncherLibPath))
-                throw new Exception("Could not find the launcher lib");
-
             // todo automatically fill this from the json file
-            AddConfigValueMapping("binPath", binPath);
-            AddConfigValueMapping("installPath", binPath);
+            AddConfigValueMapping("binPath", Deployment.BinPath);
+            AddConfigValueMapping("installPath", Deployment.InstallPath);
             if (!string.IsNullOrEmpty(Deployment.HttpProxy))
             {
                 AddConfigValueMapping("httpProxy", Deployment.HttpProxy);
@@ -78,15 +63,15 @@ namespace CSLauncher.Deployer
 
                 string toolsetInstallPath;
                 if (toolset.UrlSource != null)
-                    toolsetInstallPath = HandleUrlSource(toolset.UrlSource, installPath);
+                    toolsetInstallPath = HandleUrlSource(toolset.UrlSource);
                 else if (toolset.NugetSource != null)
-                    toolsetInstallPath = HandleNugetSource(toolset.NugetSource, installPath);
+                    toolsetInstallPath = HandleNugetSource(toolset.NugetSource);
                 else
                     throw new Exception(string.Format("Toolset {0} missing source url and nuget", toolset));
 
                 foreach (Tool tool in toolset.Tools)
                 {
-                    HandleTool(toolset, tool, binPath, toolsetInstallPath);
+                    HandleTool(toolset, tool, toolsetInstallPath);
                 }
             }
         }
@@ -185,11 +170,12 @@ namespace CSLauncher.Deployer
             return finalVal;
         }
 
-        private string HandleUrlSource(string urlSource, string installPath)
+        private string HandleUrlSource(string urlSource)
         {
             LogVerbose("--Preparing source {0}", urlSource);
 
             int separatorIdx = urlSource.LastIndexOf('/') + 1;
+            string installPath = Deployment.InstallPath;
             string zipFileName = urlSource.Substring(separatorIdx, urlSource.Length - separatorIdx);
             string zipFileNameWithoutExt = zipFileName.Substring(0, zipFileName.Length - 4);
             string toolsetInstallPath = Path.Combine(installPath, zipFileNameWithoutExt);
@@ -234,8 +220,10 @@ namespace CSLauncher.Deployer
             return toolsetInstallPath;
         }
 
-        private string HandleNugetSource(NugetSource nugetSource, string installPath)
+        private string HandleNugetSource(NugetSource nugetSource)
         {
+            string installPath = Deployment.InstallPath;
+
             //ID of the package to be looked up
             /*string packageID = "EntityFramework";
 
@@ -306,14 +294,14 @@ namespace CSLauncher.Deployer
             };
         }
         
-        private Action CreateCommandAction(string binPath, string file, string arguments, EnvVariable[] envVariables)
+        private Action CreateCommandAction(string file, string arguments, EnvVariable[] envVariables)
         {
             return () =>
             {
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.UseShellExecute = false;
                 startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                startInfo.FileName = Path.Combine(binPath, file);
+                startInfo.FileName = Path.Combine(Deployment.BinPath, file);
                 startInfo.Arguments = arguments;
 
                 foreach (EnvVariable envVariable in envVariables)
@@ -327,7 +315,7 @@ namespace CSLauncher.Deployer
             };
         }
 
-        private void HandleTool(ToolSet toolset, Tool tool, string binPath, string toolsetInstallPath)
+        private void HandleTool(ToolSet toolset, Tool tool, string toolsetInstallPath)
         {
             LogVerbose("--Preparing tool {0}", toolset.Name);
             LauncherConfig launcherConfig = new LauncherConfig();
@@ -357,13 +345,13 @@ namespace CSLauncher.Deployer
 
             if (tool.Command != null)
             {
-                CommandActions.Add(CreateCommandAction(binPath, tool.Command.FileName, tool.Command.Arguments, tool.Command.EnvVariables));
+                CommandActions.Add(CreateCommandAction(tool.Command.FileName, tool.Command.Arguments, tool.Command.EnvVariables));
             }
 
             foreach (string alias in tool.Aliases)
             {
                 LogVerbose("----Preparing alias {0}", alias);
-                string aliasPath = Path.Combine(binPath, alias);
+                string aliasPath = Path.Combine(Deployment.BinPath, alias);
                 AliasSetupActions.Add(createAliasSetupAction(launcherConfig, alias, aliasPath));
             }
         }
