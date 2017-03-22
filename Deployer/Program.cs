@@ -35,8 +35,8 @@ namespace CSLauncher.Deployer
         [Option("get-binPath", HelpText= "returns the config 'binPath' value without doing any install")]
         public bool GetBinPath { get; set;  }
 
-        [ValueList(typeof(List<string>), MaximumElements = 1)]
-        public IList<string> ConfigFile { get; set; }
+        [ValueList(typeof(List<string>))]
+        public IList<string> ConfigFiles { get; set; }
 
         [HelpOption]
         public string GetUsage()
@@ -48,9 +48,8 @@ namespace CSLauncher.Deployer
                 AdditionalNewLineAfterOption = true,
                 AddDashesToOption = true
             };
-            help.AddPreOptionsLine("Deployer expect to read in deployment file that defines the files to deploy/install");
-            help.AddPreOptionsLine("If no config file is provided, deployment.json will be used ");
-            help.AddPreOptionsLine("Usage: Deployer.exe [options] <FILE>");
+            help.AddPreOptionsLine("Deployer expect to read in at minimum one json or yml deployment file that defines the files to deploy/install");
+            help.AddPreOptionsLine("Usage: Deployer.exe [options] <FILES>");
             help.AddPreOptionsLine("  where:");
 
             help.AddOptions(this);
@@ -82,9 +81,10 @@ namespace CSLauncher.Deployer
                         s.MutuallyExclusive = true;
                         s.CaseSensitive = true;
                         s.HelpWriter = Console.Error;
-                    });
+                    }
+                );
                 var isValid = parser.ParseArgumentsStrict(args, options);
-                if (!isValid )
+                if (!isValid)
                 {
                     return 1;
                 }
@@ -95,24 +95,40 @@ namespace CSLauncher.Deployer
                     return 0;
                 }
 
-                string deploymentFile = "deployment.json";
-                if (options.ConfigFile.Count > 0)
-                    deploymentFile = options.ConfigFile[0];
-
-                if (!File.Exists(deploymentFile) )
+                if (options.ConfigFiles.Count == 0)
                 {
-                    throw new Exception(string.Format("File '{0}' not found in current directory", deploymentFile));
+                    Console.WriteLine("You at least have to provide one deployment file");
+                    return 1;
                 }
 
-                Deployment deployment = DeploymentSerializer.Read(deploymentFile, options.BinPath, options.InstallPath);
-
+                string mainDeploymentFile = options.ConfigFiles[0];
+                if (!File.Exists(mainDeploymentFile))
+                {
+                    throw new Exception(string.Format("File '{0}' not found in current directory", mainDeploymentFile));
+                }
+                Deployment mainDeployment = Deployment.Deserialize(mainDeploymentFile, options.BinPath, options.InstallPath);
                 if (options.GetBinPath)
                 {
-                    Console.WriteLine(deployment.BinPath);
+                    Console.WriteLine(mainDeployment.BinPath);
                     return 0;
                 }
 
-                var deployer = new Deployer(deployment, options.Verbose);
+                for (int i = 1; i < options.ConfigFiles.Count; ++i)
+                {
+                    string secondaryDeploymentFile = options.ConfigFiles[i];
+                    if (!File.Exists(secondaryDeploymentFile))
+                    {
+                        Console.WriteLine("Secondary deployment file {0} not found, skipping it", secondaryDeploymentFile);
+                        continue;
+                    }
+                        
+                    Deployment secondaryDeployment = Deployment.Deserialize(secondaryDeploymentFile, options.BinPath, options.InstallPath);
+                    mainDeployment.Merge(secondaryDeployment);
+                }
+
+                mainDeployment.Validate();
+
+                var deployer = new Deployer(mainDeployment, options.Verbose);
                 if (options.Clean)
                 {
                     deployer.Clean();

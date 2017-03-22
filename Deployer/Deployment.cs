@@ -5,6 +5,7 @@ using System.Runtime.Serialization.Json;
 
 using CSLauncher.LauncherLib;
 using YamlDotNet.Serialization;
+using System.Collections.Generic;
 
 namespace CSLauncher.Deployer
 {
@@ -32,6 +33,17 @@ namespace CSLauncher.Deployer
 
         [DataMember(Name = "aliases")]
         public string[] Aliases;
+
+        public void Validate(HashSet<string> aliases)
+        {
+            foreach(var alias in Aliases)
+            {
+                if (aliases.Contains(alias))
+                    throw new Exception(String.Format("Duplicate alias {0}", alias));
+
+                aliases.Add(alias);
+            }
+        }
     }
 
     [DataContract]
@@ -61,6 +73,27 @@ namespace CSLauncher.Deployer
 
         [DataMember(Name = "tools")]
         public Tool[] Tools;
+
+        public void Merge(ToolSet secondaryToolSet)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Validate(HashSet<string> toolsets, HashSet<string> aliases)
+        {
+            if (toolsets.Contains(Name))
+                throw new Exception(String.Format("Duplicate toolset {0}", Name));
+
+            toolsets.Add(Name);
+
+            if (String.IsNullOrEmpty(UrlSource) && NugetSource != null)
+                throw new Exception(String.Format("ToolSet {0} cannot have an Url and a Nuget source at the same time", Name));
+
+            foreach(var tool in Tools)
+            {
+                tool.Validate(aliases);
+            }
+        }
     }
 
     [DataContract]
@@ -84,11 +117,54 @@ namespace CSLauncher.Deployer
         public string HttpProxy;
 
         [DataMember(Name = "toolsets")]
-        public ToolSet[] ToolSets;
-    }
+        public List<ToolSet> ToolSets;
 
-    public class DeploymentSerializer
-    {
+        public void Merge(Deployment secondaryDeployment)
+        {
+            // O(n²) but we don't really care, n is quite low
+            foreach (var secondaryToolSet in secondaryDeployment.ToolSets)
+            {
+                bool found = false;
+                foreach (var mainToolSet in ToolSets)
+                {
+                    if (mainToolSet.Name == secondaryToolSet.Name)
+                    {
+                        mainToolSet.Merge(secondaryToolSet);
+                        found = true;
+                    }
+                }
+                if (!found)
+                {
+                    ToolSets.Add(secondaryToolSet);
+                }
+            }
+        }
+
+        public void Validate()
+        {
+            string binPath = Path.GetFullPath(BinPath);
+            Console.WriteLine("Using bin path: {0}", binPath);
+
+            string installPath = Path.GetFullPath(InstallPath);
+            Console.WriteLine("Using install path: {0}", installPath);
+
+            if (installPath.ToLower() == binPath.ToLower())
+                throw new Exception("The install path and the bin path cannot point to the same directory");
+
+            if (!File.Exists(LauncherPath))
+                throw new Exception("Could not find the launcher app");
+
+            if (!File.Exists(LauncherLibPath))
+                throw new Exception("Could not find the launcher lib");
+
+            HashSet<string> toolsetsSet = new HashSet<string>();
+            HashSet<string> aliasesSet = new HashSet<string>();
+            foreach (var toolSet in ToolSets)
+            {
+                toolSet.Validate(toolsetsSet, aliasesSet);
+            }
+        }
+
         private static string RootPath(string path)
         {
             if (!Path.IsPathRooted(path))
@@ -99,7 +175,7 @@ namespace CSLauncher.Deployer
             return path;
         }
 
-        public static Deployment Read(string path, string optionBinPath, string optionInstallPath)
+        public static Deployment Deserialize(string path, string optionBinPath, string optionInstallPath)
         {
             object objDeployment = null;
 
@@ -131,30 +207,30 @@ namespace CSLauncher.Deployer
             dep.LauncherPath = RootPath(dep.LauncherPath);
             dep.LauncherLibPath = RootPath(dep.LauncherLibPath);
 
-            if (optionBinPath != null )
+            if (optionBinPath != null)
             {
                 dep.BinPath = optionBinPath;
             }
 
-            if ( dep.BinPath == null )
+            if (dep.BinPath == null)
             {
                 dep.BinPath = Path.Combine("%USERPROFILE%", "bin");
             }
 
-            if (optionInstallPath != null )
+            if (optionInstallPath != null)
             {
                 dep.InstallPath = optionInstallPath;
             }
-    
-            if (dep.InstallPath == null )
+
+            if (dep.InstallPath == null)
             {
                 dep.InstallPath = Path.Combine(dep.BinPath, "packages");
             }
 
             dep.LauncherPath = Environment.ExpandEnvironmentVariables(dep.LauncherPath);
             dep.LauncherLibPath = Environment.ExpandEnvironmentVariables(dep.LauncherLibPath);
-            dep.BinPath = Environment.ExpandEnvironmentVariables(dep.BinPath);
-            dep.InstallPath = Environment.ExpandEnvironmentVariables(dep.InstallPath);
+            dep.BinPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(dep.BinPath));
+            dep.InstallPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(dep.InstallPath));
 
             return dep;
         }
