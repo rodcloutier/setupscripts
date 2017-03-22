@@ -53,7 +53,7 @@ workspace "CSLauncher"
     configurations { "Debug", "Release" }
     architecture "x86_64"
     location "Build"
-    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71", "YamlDotNet >= 4.1.0" })
+    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71", "YamlDotNet >= 4.1.0", "Nuget.Core >= 2.14" })
 
 project "LauncherLib"
     kind "SharedLib"
@@ -75,7 +75,7 @@ project "LauncherLib"
         defines { "NDEBUG" }
         optimize "On"
         symbols "Off"
-
+    filter {}
 
 project "Launcher"
     kind "ConsoleApp"
@@ -96,15 +96,14 @@ project "Launcher"
         defines { "NDEBUG" }
         optimize "On"
         symbols "Off"
-
-
+    filter {}
 
 project "Deployer"
     kind "ConsoleApp"
     location "Build/Deployer"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
-    nugetreferences ( "Build/Deployer", { "CommandLineParser", "YamlDotNet" } )
+    nugetreferences ( "Build/Deployer", { "CommandLineParser", "YamlDotNet", "Nuget.Core" } )
 
     links     { "System" }
     links     { "System.Runtime.Serialization" }
@@ -132,3 +131,28 @@ project "Deployer"
 
     configuration "deployment.json"
         buildaction "Copy"
+    filter {}
+
+project "NugetPackager"
+    kind "ConsoleApp"
+    location "Build/NugetPackager"
+    language "C#"
+    targetdir "Build/bin/%{cfg.buildcfg}"
+
+    links     { "System" }
+    links     { "System.Runtime.Serialization" }
+    links     { "System.Xml" }
+    links     { "System.IO.Compression" }
+    links     { "System.IO.Compression.FileSystem" }
+
+    files { "NugetPackager/**.cs" }
+
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
+        symbols "Off"
+    filter {}

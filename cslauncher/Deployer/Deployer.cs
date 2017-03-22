@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Diagnostics;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using NuGet;
 
 namespace CSLauncher.Deployer
 {
@@ -220,23 +221,23 @@ namespace CSLauncher.Deployer
             return toolsetInstallPath;
         }
 
-        private string HandleNugetSource(NugetSource nugetSource)
+        public string HandleNugetSource(NugetSource nugetSource)
         {
             string installPath = Deployment.InstallPath;
 
             //ID of the package to be looked up
-            /*string packageID = "EntityFramework";
+            string packageID = "AzCpopy";
 
             //Connect to the official package repository
-            IPackageRepository repo = PackageRepositoryFactory.Default.CreateRepository("https://packages.nuget.org/api/v2");
+            IPackageRepository repo = PackageRepositoryFactory.Default.CreateRepository("https://artifactory/api/nuget/nuget");
 
             //Initialize the package manager
-            string path = "";
+            string path = ".";
             PackageManager packageManager = new PackageManager(repo, path);
 
             //Download and unzip the package
-            packageManager.InstallPackage(packageID, SemanticVersion.Parse("5.0.0"));
-            */
+            packageManager.InstallPackage(packageID, SemanticVersion.Parse("1.0.0"));
+
             throw new NotImplementedException();
         }
 

@@ -129,6 +129,7 @@ namespace CSLauncher.Deployer
                 mainDeployment.Validate();
 
                 var deployer = new Deployer(mainDeployment, options.Verbose);
+
                 if (options.Clean)
                 {
                     deployer.Clean();
