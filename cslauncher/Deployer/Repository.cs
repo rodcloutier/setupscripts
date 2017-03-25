@@ -139,11 +139,9 @@ namespace CSLauncher.Deployer
 
         internal override void InstallPackage(Deployment deployment, Package p)
         {
-            string packageInstallPath = p.InstallPath;
-
             PackageManager.InstallPackage(p.PackageId, p.Version);
 
-            string sentinelFile = Path.Combine(packageInstallPath, "__deployer__");
+            string sentinelFile = Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version), "__deployer__");
             using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
             File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
