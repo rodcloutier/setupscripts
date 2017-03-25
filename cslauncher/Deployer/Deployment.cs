@@ -1,238 +1,371 @@
-﻿using System;
-using System.IO;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-
-using CSLauncher.LauncherLib;
-using YamlDotNet.Serialization;
+﻿using CSLauncher.LauncherLib;
+using NuGet;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace CSLauncher.Deployer
 {
-    [DataContract]
-    public class Command
+    internal class Deployment
     {
-        [DataMember(Name = "file")]
-        public string FileName;
-
-        [DataMember(Name = "arguments")]
-        public string Arguments;
-
-        [DataMember(Name = "envVariables")]
-        public EnvVariable[] EnvVariables;
-    }
-
-    [DataContract]
-    public class Tool
-    {
-        [DataMember(Name = "command")]
-        public Command Command;
-
-        [DataMember(Name = "launcherConfig")]
-        public LauncherConfig LauncherConfig;
-
-        [DataMember(Name = "aliases")]
-        public string[] Aliases;
-
-        public void Validate(HashSet<string> aliases)
+        internal Deployment(List<DeploymentFile> deploymentFiles, string optionBinPath, string optionInstallPath, DateTime deploymentStamp)
         {
-            foreach(var alias in Aliases)
-            {
-                if (aliases.Contains(alias))
-                    throw new Exception(String.Format("Duplicate alias {0}", alias));
+            ConfigMapping = new Dictionary<string, string>();
+            BinPath = InitBinPath(deploymentFiles, optionBinPath);
+            InstallPath = InitInstallPath(deploymentFiles, optionInstallPath);
+            HttpProxy = InitHttpProxy(deploymentFiles);
+            LauncherPath = Utils.RootPathToExePath("Launcher.exe");
+            LauncherLibPath = Utils.RootPathToExePath("LauncherLib.dll");
+            TimeStamp = deploymentStamp;
+            Repositories = InitRepositories(deploymentFiles);
+            Packages = InitPackages(deploymentFiles);
+            Tools = InitTools(deploymentFiles);
+            FixupConfigValues();
+        }
 
-                aliases.Add(alias);
+        internal string BinPath { get; }
+        internal string InstallPath { get; }
+        internal string LauncherPath { get; }
+        internal string LauncherLibPath { get; }
+        internal string HttpProxy { get; }
+        internal DateTime TimeStamp { get; }
+        internal Dictionary<string, Repository> Repositories { get; }
+        internal Dictionary<string, List<Package>> Packages { get; }
+        internal List<Tool> Tools { get; }
+        internal Dictionary<string, string> ConfigMapping { get; }
+
+        private string InitBinPath(List<DeploymentFile> deploymentFiles, string optionBinPath)
+        {
+            string binPath = optionBinPath;
+            foreach (var deploymentFile in deploymentFiles)
+            {
+                binPath = Utils.OverrideString(binPath, deploymentFile.BinPath);
             }
-        }
-    }
 
-    [DataContract]
-    public class NugetSource
-    {
-        [DataMember(Name = "repositoryUrl")]
-        public string RepositoryUrl;
-
-        [DataMember(Name = "packageName")]
-        public string PackageName;
-
-        [DataMember(Name = "packageVersion")]
-        public string PackageVersion;
-    }
-
-    [DataContract]
-    public class ToolSet
-    {
-        [DataMember(Name = "name")]
-        public string Name;
-
-        [DataMember(Name = "url")]
-        public string UrlSource;
-
-        [DataMember(Name = "nuget")]
-        public NugetSource NugetSource;
-
-        [DataMember(Name = "tools")]
-        public Tool[] Tools;
-
-        public void Merge(ToolSet secondaryToolSet)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Validate(HashSet<string> toolsets, HashSet<string> aliases)
-        {
-            if (toolsets.Contains(Name))
-                throw new Exception(String.Format("Duplicate toolset {0}", Name));
-
-            toolsets.Add(Name);
-
-            if (String.IsNullOrEmpty(UrlSource) && NugetSource != null)
-                throw new Exception(String.Format("ToolSet {0} cannot have an Url and a Nuget source at the same time", Name));
-
-            foreach(var tool in Tools)
+            if (binPath == null)
             {
-                tool.Validate(aliases);
+                binPath = Path.Combine("%USERPROFILE%", "bin");
             }
+
+            binPath = Utils.NormalizePath(binPath);
+            Utils.Log("Using bin path: {0}", binPath);
+            AddConfigMapping("binPath", binPath);
+            return binPath;
         }
-    }
 
-    [DataContract]
-    public class Deployment
-    {
-        public DateTime FileDateTime;
-
-        [DataMember(Name = "binPath")]
-        public string BinPath;
-
-        [DataMember(Name = "installPath")]
-        public string InstallPath;
-
-        [DataMember(Name = "launcherPath")]
-        public string LauncherPath;
-
-        [DataMember(Name = "launcherLibPath")]
-        public string LauncherLibPath;
-
-        [DataMember(Name = "httpProxy")]
-        public string HttpProxy;
-
-        [DataMember(Name = "toolsets")]
-        public List<ToolSet> ToolSets;
-
-        public void Merge(Deployment secondaryDeployment)
+        private string InitInstallPath(List<DeploymentFile> deploymentFiles, string optionInstallPath)
         {
-            // O(n²) but we don't really care, n is quite low
-            foreach (var secondaryToolSet in secondaryDeployment.ToolSets)
+            string installPath = optionInstallPath;
+            foreach (var deploymentFile in deploymentFiles)
             {
-                bool found = false;
-                foreach (var mainToolSet in ToolSets)
+                installPath = Utils.OverrideString(installPath, deploymentFile.InstallPath);
+            }
+
+            if (installPath == null)
+            {
+                installPath = Path.Combine(BinPath, "packages");
+            }
+
+            installPath = Utils.NormalizePath(installPath);
+            Utils.Log("Using bin path: {0}", installPath);
+            AddConfigMapping("installPath", installPath);
+            return installPath;
+        }
+
+        private string InitHttpProxy(List<DeploymentFile> deploymentFiles)
+        {
+            string httpProxy = null;
+            foreach (var deploymentFile in deploymentFiles)
+            {
+                httpProxy = Utils.OverrideString(httpProxy, deploymentFile.HttpProxy);
+            }
+            if (httpProxy != null)
+            {
+                Utils.Log("Using http proxy: {0}", httpProxy);
+            }
+            return httpProxy;
+        }
+
+        private Dictionary<string, Repository> InitRepositories(List<DeploymentFile> deploymentFiles)
+        {
+            var repositories = new Dictionary<string, Repository>();
+            foreach (var deploymentFile in deploymentFiles)
+            {
+                if (deploymentFile.Repositories == null)
+                    continue;
+                foreach (var fileRepo in deploymentFile.Repositories)
                 {
-                    if (mainToolSet.Name == secondaryToolSet.Name)
+                    if (string.IsNullOrEmpty(fileRepo.Id))
+                        throw new InvalidDataException(string.Format("Missing repository id in {0}", deploymentFile.FileName));
+                    if (string.IsNullOrEmpty(fileRepo.Type))
+                        throw new InvalidDataException(string.Format("Missing repository type in {0} for {1}", deploymentFile.FileName, fileRepo.Id));
+                    if (string.IsNullOrEmpty(fileRepo.Source))
+                        throw new InvalidDataException(string.Format("Missing repository source in {0} for {1}", deploymentFile.FileName, fileRepo.Id));
+
+                    Repository newRepo = null;
+                    string type = fileRepo.Type.ToLower();
+                    switch (type)
                     {
-                        mainToolSet.Merge(secondaryToolSet);
-                        found = true;
+                        case "directory":
+                            newRepo = new DirectoryRepository(fileRepo.Source, InstallPath);
+                            break;
+                        case "nuget":
+                            newRepo = new NugetRepository(fileRepo.Source, InstallPath);
+                            break;
+                        default:
+                            throw new InvalidDataException(string.Format("Invalid repository type in {0} for {1}", deploymentFile.FileName, fileRepo.Id));
+                    }
+                    if (repositories.ContainsKey(fileRepo.Id))
+                        Utils.Log("Overriding repository {0} with the one deployment file {1}", fileRepo.Id, deploymentFile.FileName);
+                    else
+                        Utils.Log("Using repository {0}", fileRepo.Id);
+
+                    repositories[fileRepo.Id] = newRepo;
+                }
+            }
+
+            return repositories;
+        }
+
+        private Dictionary<string, List<Package>> InitPackages(List<DeploymentFile> deploymentFiles)
+        {
+            var packagesDict = new Dictionary<string, Dictionary<string, Package>>();
+            foreach (var deploymentFile in deploymentFiles)
+            {
+                if (deploymentFile.Packages == null)
+                    continue;
+                foreach (var filePackage in deploymentFile.Packages)
+                {
+                    if (string.IsNullOrEmpty(filePackage.Id))
+                        throw new InvalidDataException(string.Format("Missing package id in {0}", deploymentFile.FileName));
+                    if (string.IsNullOrEmpty(filePackage.Version))
+                        throw new InvalidDataException(string.Format("Missing package version in {0} for {1}", deploymentFile.FileName, filePackage.Id));
+                    if (string.IsNullOrEmpty(filePackage.SourceID))
+                        throw new InvalidDataException(string.Format("Missing package sourceId in {0} for {1}", deploymentFile.FileName, filePackage.Id));
+                    if (!Repositories.ContainsKey(filePackage.SourceID))
+                        throw new InvalidDataException(string.Format("sourceId {0} used by package {1}}", filePackage.SourceID, filePackage.Id));
+
+                    SemanticVersion semVer = Utils.ParseVersion(filePackage.Version);
+                    Package package = new Package(filePackage.Id, semVer, Repositories[filePackage.SourceID]);
+                    if (!packagesDict.ContainsKey(filePackage.Id))
+                    {
+                        packagesDict[filePackage.Id] = new Dictionary<string, Package>();
+                    }
+                    if (packagesDict[filePackage.Id].ContainsKey(filePackage.Id))
+                        Utils.Log("Overriding package {0} with the one on deployment file {1}", filePackage.Id, deploymentFile.FileName);
+                    else
+                        Utils.Log("Using package {0}", filePackage.Id);
+
+                    packagesDict[filePackage.Id][filePackage.Id + "-" + filePackage.Version] = package;
+                }
+            }
+            var packages = new Dictionary<string, List<Package>>();
+            foreach (var entry in packagesDict)
+            {
+                
+                var list = new List<Package>(entry.Value.Count);
+                foreach(var packageEnty in entry.Value)
+                {
+                    list.Add(packageEnty.Value);
+                    AddConfigMapping("package-" + packageEnty.Value.ToFullString(), packageEnty.Value.InstallPath);
+                }
+                list.Sort((a, b) => { return b.Version.CompareTo(a.Version); });
+                packages[entry.Key] = list;
+            }
+            return packages;
+        }
+
+        private List<Tool> InitTools(List<DeploymentFile> deploymentFiles)
+        {
+            var toolsDict = new Dictionary<string, List<Tool>>();
+            var aliasesSet = new HashSet<string>();
+            foreach (var deploymentFile in deploymentFiles)
+            {
+                if (deploymentFile.Toolsets == null)
+                    continue;
+
+                foreach (var toolset in deploymentFile.Toolsets)
+                {
+                    if (string.IsNullOrEmpty(toolset.Id))
+                        throw new InvalidDataException(string.Format("Missing toolset id in {0}", deploymentFile.FileName));
+
+                    Package package = GetCompatiblePackage(toolset.PackageSpec);
+                    if (!string.IsNullOrEmpty(toolset.PackageSpec) && package == null)
+                        throw new InvalidDataException(string.Format("Could not resolve the packageId for toolset {0} in {1} for file {2}", 
+                            toolset.Id, toolset.PackageSpec, deploymentFile.FileName));
+                    string packageInstallPath = null;
+                    if (package != null)
+                    {
+                        Utils.Log("Using package {0} for toolset {1}", toolset.PackageSpec, toolset.Id);
+                        package.IsUsed = true;
+                        packageInstallPath = package.InstallPath;
+                    }
+
+                    List<Tool> newTools = InitTools(toolset.Tools, packageInstallPath, deploymentFile);
+                    if (toolsDict.ContainsKey(toolset.Id))
+                        Utils.Log("Overriding toolset {0} with the one on deployment file {1}", toolset.Id, deploymentFile.FileName);
+                    else
+                        Utils.Log("Using toolset {0}", toolset.Id);
+
+                    toolsDict[toolset.Id] = newTools;
+                }
+            }
+            var tools = new List<Tool>(toolsDict.Count);
+            foreach (var entry in toolsDict)
+            {
+                foreach (var tool in entry.Value)
+                {
+                    tools.Add(tool);
+                    foreach (var alias in tool.Aliases)
+                    {
+                        if (aliasesSet.Contains(alias))
+                            throw new InvalidDataException(string.Format("Conflicting aliases {0}", alias));
+                        aliasesSet.Add(alias);
                     }
                 }
-                if (!found)
+            }
+            return tools;
+        }
+
+        private Package GetCompatiblePackage(string packageSpec)
+        {
+            if (!string.IsNullOrEmpty(packageSpec))
+            {
+                string packageId;
+                SemanticVersion semVer;
+                Utils.VersionOp vOp;
+                Utils.VersionComponent filterComponent;
+                Utils.GetPackageSpecComponents(packageSpec, out packageId, out vOp, out semVer, out filterComponent);
+
+                if (Packages.ContainsKey(packageId))
                 {
-                    ToolSets.Add(secondaryToolSet);
+                    List<Package> potentialPackages = Packages[packageId];
+                    var filteredPotentialPackages = new List<Package>();
+                    foreach (var potentialPackage in potentialPackages)
+                    {
+                        if (!Utils.FilterPackage(semVer, potentialPackage.Version, filterComponent))
+                            filteredPotentialPackages.Add(potentialPackage);
+                    }
+                    foreach (var potentialPackage in filteredPotentialPackages)
+                    {
+                        if (Utils.ValidPackage(semVer, potentialPackage.Version, filterComponent, vOp))
+                            return potentialPackage;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private List<Tool> InitTools(DeploymentFile.Tool[] fileTools, string packageInstallPath, DeploymentFile deploymentFile)
+        {
+            var tools = new List<Tool>();
+            foreach (var fileTool in fileTools)
+            {
+                if (string.IsNullOrEmpty(fileTool.Path))
+                    throw new InvalidDataException(string.Format("Missing tool path in {0}", deploymentFile.FileName));
+                if (fileTool.Aliases.Length == 0)
+                    throw new InvalidDataException(string.Format("Missing tool aliases in {0} for {1}", fileTool.Path, deploymentFile.FileName));
+
+                string toolInstallPath = Environment.ExpandEnvironmentVariables(fileTool.Path);
+                if (!string.IsNullOrEmpty(packageInstallPath))
+                {
+                    if (Path.IsPathRooted(toolInstallPath))
+                        throw new InvalidDataException(string.Format("Tools with linked packages can't have rooted paths: {0}", fileTool.Path));
+
+                    toolInstallPath = Path.GetFullPath(Path.Combine(packageInstallPath, toolInstallPath));
+                }
+                else
+                {
+                    if (!Path.IsPathRooted(fileTool.Path))
+                        throw new InvalidDataException(string.Format("Tools without linked packages need rooted paths: {0}", fileTool.Path));
+                }
+
+                switch (fileTool.Type)
+                {
+                    case "exe":
+                        tools.Add(new ExeTool(fileTool.Aliases, toolInstallPath, fileTool.Blocking, InitEnvVariables(fileTool.EnvVariables)));
+                        break;
+                    case "bash":
+                        tools.Add(new BashTool(fileTool.Aliases, toolInstallPath, InitEnvVariables(fileTool.EnvVariables)));
+                        break;
+                    default:
+                        throw new InvalidDataException(string.Format("Tool type {0} not supported", fileTool.Type));
+                }
+
+                AddConfigMapping("tool-" + fileTool.Aliases[0], toolInstallPath);
+
+                if (fileTool.Commands != null && fileTool.Commands.Length > 0)
+                {
+                    var commandList = tools.Last().Commands;
+                    foreach (var fileCommand in fileTool.Commands)
+                    {
+                        string commandPath = Environment.ExpandEnvironmentVariables(fileCommand.FilePath); ;
+                        if (!string.IsNullOrEmpty(commandPath) && !Path.IsPathRooted(commandPath))
+                        {
+                            commandPath = Path.GetFullPath(Path.Combine(packageInstallPath, commandPath));
+                        }
+                        commandList.Add(new Command(commandPath, fileCommand.Arguments, InitEnvVariables(fileCommand.EnvVariables)));
+                    }
+                    
+                }
+            }
+
+            return tools;
+        }
+
+        private EnvVariable[] InitEnvVariables(EnvVariable[] envVariables)
+        {
+            EnvVariable[] newEnvVariables = null;
+            if (envVariables != null)
+            {
+                newEnvVariables = new EnvVariable[envVariables.Length];
+                envVariables.CopyTo(newEnvVariables, 0);
+            }
+            return newEnvVariables;
+        }
+
+        private void FixupConfigValues()
+        {
+            foreach (var tool in Tools)
+            {
+                if (tool.EnvVariables != null)
+                {
+                    for (int i = 0; i < tool.EnvVariables.Length; ++i)
+                    {
+                        SetConfigValue(ref tool.EnvVariables[i].Value);
+                    }
+                }
+                
+                foreach (var command in tool.Commands)
+                {
+                    if (command.EnvVariables != null)
+                    {
+                        for (int i = 0; i < command.EnvVariables.Length; ++i)
+                        {
+                            SetConfigValue(ref command.EnvVariables[i].Value);
+                        }
+                    }
                 }
             }
         }
 
-        public void Validate()
+        private void AddConfigMapping(string key, string value)
         {
-            string binPath = Path.GetFullPath(BinPath);
-            Console.WriteLine("Using bin path: {0}", binPath);
-
-            string installPath = Path.GetFullPath(InstallPath);
-            Console.WriteLine("Using install path: {0}", installPath);
-
-            if (installPath.ToLower() == binPath.ToLower())
-                throw new Exception("The install path and the bin path cannot point to the same directory");
-
-            if (!File.Exists(LauncherPath))
-                throw new Exception("Could not find the launcher app");
-
-            if (!File.Exists(LauncherLibPath))
-                throw new Exception("Could not find the launcher lib");
-
-            HashSet<string> toolsetsSet = new HashSet<string>();
-            HashSet<string> aliasesSet = new HashSet<string>();
-            foreach (var toolSet in ToolSets)
-            {
-                toolSet.Validate(toolsetsSet, aliasesSet);
-            }
+            ConfigMapping.Add("{" + key + "}", value);
         }
 
-        private static string RootPath(string path)
+        private void SetConfigValue(ref string str)
         {
-            if (!Path.IsPathRooted(path))
+            if (string.IsNullOrEmpty(str))
+                return;
+
+            MatchCollection mc = Regex.Matches(str, @"\{(.*?)\}");
+            foreach (Match m in mc)
             {
-                string currentExecutablePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                return Path.Combine(currentExecutablePath, path);
+                str = str.Replace(m.ToString(), ConfigMapping[m.ToString()]);
             }
-            return path;
-        }
-
-        public static Deployment Deserialize(string path, string optionBinPath, string optionInstallPath)
-        {
-            object objDeployment = null;
-
-            using (FileStream fileStream = new FileStream(path, FileMode.Open))
-            {
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    // Convert to JSON
-                    var serializerBuilder = new SerializerBuilder();
-                    serializerBuilder.JsonCompatible();
-
-                    var serializer = serializerBuilder.Build();
-                    var deserializer = new Deserializer();
-                    var writer = new StreamWriter(stream);
-
-                    serializer.Serialize(writer, deserializer.Deserialize(new StreamReader(fileStream)));
-                    writer.Flush();
-
-                    stream.Seek(0, SeekOrigin.Begin);
-
-                    // Deserialize with the contract
-                    DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Deployment));
-                    objDeployment = jsonSerializer.ReadObject(stream);
-                }
-            }
-
-            Deployment dep = objDeployment as Deployment;
-            dep.FileDateTime = File.GetLastWriteTimeUtc(path);
-            dep.LauncherPath = RootPath(dep.LauncherPath);
-            dep.LauncherLibPath = RootPath(dep.LauncherLibPath);
-
-            if (optionBinPath != null)
-            {
-                dep.BinPath = optionBinPath;
-            }
-
-            if (dep.BinPath == null)
-            {
-                dep.BinPath = Path.Combine("%USERPROFILE%", "bin");
-            }
-
-            if (optionInstallPath != null)
-            {
-                dep.InstallPath = optionInstallPath;
-            }
-
-            if (dep.InstallPath == null)
-            {
-                dep.InstallPath = Path.Combine(dep.BinPath, "packages");
-            }
-
-            dep.LauncherPath = Environment.ExpandEnvironmentVariables(dep.LauncherPath);
-            dep.LauncherLibPath = Environment.ExpandEnvironmentVariables(dep.LauncherLibPath);
-            dep.BinPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(dep.BinPath));
-            dep.InstallPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(dep.InstallPath));
-
-            return dep;
         }
     }
 }

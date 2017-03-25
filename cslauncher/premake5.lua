@@ -118,6 +118,7 @@ project "Deployer"
 
     files { "Deployer/**.cs" }
     files { "*.json" }
+    files { "*.yml" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }
@@ -129,13 +130,15 @@ project "Deployer"
         symbols "Off"
     filter {}
 
-    configuration "deployment.json"
+    configuration "*.yml"
+        buildaction "Copy"
+    configuration "*.json"
         buildaction "Copy"
     filter {}
 
-project "NugetPackager"
+project "Packager"
     kind "ConsoleApp"
-    location "Build/NugetPackager"
+    location "Build/Packager"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
 
@@ -145,7 +148,7 @@ project "NugetPackager"
     links     { "System.IO.Compression" }
     links     { "System.IO.Compression.FileSystem" }
 
-    files { "NugetPackager/**.cs" }
+    files { "Packager/**.cs" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }

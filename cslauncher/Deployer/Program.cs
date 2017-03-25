@@ -13,9 +13,6 @@ namespace CSLauncher.Deployer
     {
         [Option("version", HelpText = "Shows the version")]
         public bool Version { get; set; }
-        
-        [Option('v', "verbose", HelpText = "Increase log verbosity")]
-        public bool Verbose { get; set; }
 
         [Option('d', "dryrun", MutuallyExclusiveSet = "zero", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
         public bool DryRun { get; set; }
@@ -35,8 +32,14 @@ namespace CSLauncher.Deployer
         [Option("get-binPath", HelpText= "returns the config 'binPath' value without doing any install")]
         public bool GetBinPath { get; set;  }
 
+        [Option("outputprocessedjson", HelpText = "returns the processed json file")]
+        public bool OutputProcessJson { get; set; }
+
+        [Option("quiet", HelpText = "Runs without output any info")]
+        public bool Quiet { get; set; }
+
         [ValueList(typeof(List<string>))]
-        public IList<string> ConfigFiles { get; set; }
+        public IList<string> DeploymentFilePaths { get; set; }
 
         [HelpOption]
         public string GetUsage()
@@ -94,41 +97,13 @@ namespace CSLauncher.Deployer
                     PrintVersion();
                     return 0;
                 }
-
-                if (options.ConfigFiles.Count == 0)
-                {
-                    Console.WriteLine("You at least have to provide one deployment file");
-                    return 1;
-                }
-
-                string mainDeploymentFile = options.ConfigFiles[0];
-                if (!File.Exists(mainDeploymentFile))
-                {
-                    throw new Exception(string.Format("File '{0}' not found in current directory", mainDeploymentFile));
-                }
-                Deployment mainDeployment = Deployment.Deserialize(mainDeploymentFile, options.BinPath, options.InstallPath);
+                Utils.Quiet = options.Quiet || options.GetBinPath;
+                var deployer = new Deployer(options.DeploymentFilePaths, options.BinPath, options.InstallPath, options.OutputProcessJson);
                 if (options.GetBinPath)
                 {
-                    Console.WriteLine(mainDeployment.BinPath);
+                    Console.WriteLine(deployer.Deployment.BinPath);
                     return 0;
                 }
-
-                for (int i = 1; i < options.ConfigFiles.Count; ++i)
-                {
-                    string secondaryDeploymentFile = options.ConfigFiles[i];
-                    if (!File.Exists(secondaryDeploymentFile))
-                    {
-                        Console.WriteLine("Secondary deployment file {0} not found, skipping it", secondaryDeploymentFile);
-                        continue;
-                    }
-                        
-                    Deployment secondaryDeployment = Deployment.Deserialize(secondaryDeploymentFile, options.BinPath, options.InstallPath);
-                    mainDeployment.Merge(secondaryDeployment);
-                }
-
-                mainDeployment.Validate();
-
-                var deployer = new Deployer(mainDeployment, options.Verbose);
 
                 if (options.Clean)
                 {
@@ -136,12 +111,10 @@ namespace CSLauncher.Deployer
                 }
                 else
                 {
-                    deployer.Prepare(options.ToolSet);
-
                     if (!options.DryRun)
                     {
                         deployer.ProcessPackages();
-                        deployer.ProcessAliases();
+                        deployer.ProcessTools();
                         deployer.ProcessCommands();
                         deployer.CleanUnused();
                     }

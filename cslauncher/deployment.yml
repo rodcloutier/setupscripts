@@ -1,160 +1,35 @@
-launcherPath: Launcher.exe
-launcherLibPath: LauncherLib.dll
+binPath: '%USERPROFILE%\testbin'
+httpProxy: &HTTP_PROXY null
+
+repositories:
+  - id: local
+    type: directory
+    source: C:\DevTools\sources
+
+packages:
+  - id: PortableGit
+    version: "2.11.0.3-64-bit"
+    sourceId: local
+  - id: CPython
+    version: "3.5.2-amd64"
+    sourceId: local
+  - id: CPython
+    version: "2.7.12"
+    sourceId: local
+  - id: AzCopy
+    version: "1.0.0-tag"
+    sourceId: local
+
 toolsets:
-- name: git
-  url: file://C:/DevTools/sources/PortableGit-2.11.0.3-64-bit.zip
-  tools:
-  - launcherConfig:
-      exePath: bin\git.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - git
-  - launcherConfig:
-      exePath: bin\bash.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - msys-bash
-- name: python3
-  url: file://C:/DevTools/sources/cpython-3.5.2.amd64.zip
-  tools:
-  - launcherConfig:
-      exePath: python.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - python
-    - python3
-    - python35
-  - launcherConfig:
-      exePath: Scripts\pip.exe
-      noWait: false
-      envVariables: []
-    command:
-      file: python.exe
-      arguments: -m pip install -U pip
-      envVariables:
-      - key: HTTP_PROXY
-        value: '{httpProxy}'
-      - key: HTTPS_PROXY
-        value: '{httpProxy}'
-    aliases:
-    - pip
-    - pip3
-    - pip35
-  - installCommand: python.exe -m pip install pylint
-    launcherConfig:
-      exePath: Scripts\pylint.exe
-      noWait: false
-      envVariables: []
-    command:
-      file: python.exe
-      arguments: -m pip install pylint
-      envVariables:
-      - key: HTTP_PROXY
-        value: '{httpProxy}'
-      - key: HTTPS_PROXY
-        value: '{httpProxy}'
-    aliases:
-    - pylint
-    - pylint3
-    - pylint35
-- name: python2
-  url: file://C:/DevTools/sources/cpython-2.7.12.amd64.zip
-  tools:
-  - launcherConfig:
-      exePath: python.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - python2
-    - python37
-  - launcherConfig:
-      exePath: Scripts\pip.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - pip2
-    - pip27
-  - installCommand: python.exe -m pip install pylint
-    launcherConfig:
-      exePath: Scripts\pylint.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - pylint2
-    - pylint27
-- name: cloc
-  url: file://C:/DevTools/sources/cloc-1.72.zip
-  tools:
-  - launcherConfig:
-      exePath: cloc.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - cloc
-- name: premake
-  url: file://C:/DevTools/sources/premake-5.11.zip
-  tools:
-  - launcherConfig:
-      exePath: premake.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - premake
-- name: cmake
-  url: file://C:/DevTools/sources/cmake-3.7.1-win64-x64.zip
-  tools:
-  - launcherConfig:
-      exePath: bin\cmake.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - cmake
-  - launcherConfig:
-      exePath: bin\cmake-gui.exe
-      noWait: true
-      envVariables: []
-    aliases:
-    - cmake-gui
-- name: vscode
-  url: file://C:/DevTools/sources/VSCode-win32-1.10.2.zip
-  tools:
-  - launcherConfig:
-      exePath: Code.exe
-      noWait: true
-      envVariables: []
-    aliases:
-    - code
-    - vscode
-- name: kubectl
-  url: file://C:/DevTools/sources/kubectl-0.15.2.zip
-  tools:
-  - launcherConfig:
-      exePath: kubectl.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - kubectl
-- name: minikube
-  url: file://C:/DevTools/sources/minikube-windows-amd64-0.17.1.zip
-  tools:
-  - launcherConfig:
-      exePath: minikube.exe
-      noWait: false
-      envVariables: []
-    aliases:
-    - minikube
-- name: golang
-  url: file://C:/DevTools/sources/go1.8.windows-amd64.zip
-  tools:
-  - launcherConfig:
-      exePath: bin\go.exe
-      noWait: false
-      envVariables:
-      - key: GOROOT
-        value: '{installPath}'
-    aliases:
-    - go
-    - go18
+  - id: azcopy
+    packageSpec: AzCopy
+    tools:
+      - path: AzCopy.exe
+        aliases: [azcopy]
+  - id: git
+    packageSpec: PortableGit
+    tools:
+      - path: bin\git.exe
+        aliases: [git]
+      - path: bin\bash.exe
+        aliases: [git-bash]
