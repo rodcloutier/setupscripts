@@ -49,7 +49,7 @@ namespace CSLauncher.Launcher
             }
 
             Process p = Process.Start(startInfo);
-            if (!launcherConfig.NoWait)
+            if (launcherConfig.Blocking)
                 p.WaitForExit();
 
             return 0;
