@@ -11,28 +11,28 @@ namespace CSLauncher.Deployer
 {
     class Options
     {
-        [Option("version", HelpText = "Shows the version")]
+        [Option('v', "version", HelpText = "Shows the version")]
         public bool Version { get; set; }
 
-        [Option('d', "dryrun", MutuallyExclusiveSet = "zero", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
+        [Option('d', "dry-run", MutuallyExclusiveSet = "option-mutex-1", HelpText = "Parses and prepare the deployment but does not run the Package and Aliases steps")]
         public bool DryRun { get; set; }
 
-        [Option('c', "clean", MutuallyExclusiveSet = "zero", HelpText = "Delete the deployment directories")]
+        [Option('c', "clean", MutuallyExclusiveSet = "option-mutex-1", HelpText = "Delete the deployment directories")]
         public bool Clean { get; set; }
 
-        [Option("toolset")]
-        public string ToolSet { get; set; }
+        [Option("toolset", MutuallyExclusiveSet = "option-mutex-1", HelpText = "Only install the specified toolset")]
+        public string Toolset { get; set; }
 
-        [Option("binpath", HelpText = "Path to use to override 'binPath' in the config file")]
+        [Option("bin-path", HelpText = "Path to use to override 'binPath' in the config file")]
         public string BinPath { get; set; }
 
-        [Option("installpath", HelpText = "Path to use to override 'installPath' in the config file")]
+        [Option("install-path", HelpText = "Path to use to override 'installPath' in the config file")]
         public string InstallPath { get; set; }
 
-        [Option("get-binPath", HelpText= "returns the config 'binPath' value without doing any install")]
+        [Option("get-bin-Path", HelpText= "returns the config 'binPath' value without doing any install")]
         public bool GetBinPath { get; set;  }
 
-        [Option("outputprocessedjson", HelpText = "returns the processed json file")]
+        [Option("output-processed-json", HelpText = "returns the processed json file")]
         public bool OutputProcessJson { get; set; }
 
         [Option("quiet", HelpText = "Runs without output any info")]
@@ -46,8 +46,8 @@ namespace CSLauncher.Deployer
         {
             var help = new HelpText
             {
-                Heading  = new HeadingInfo("<<app title>>", "<<app version>>"),
-                Copyright = new CopyrightInfo("<<app author>>", 2017),
+                Heading = HeadingInfo.Default,
+                Copyright = CopyrightInfo.Default,
                 AdditionalNewLineAfterOption = true,
                 AddDashesToOption = true
             };
@@ -97,6 +97,12 @@ namespace CSLauncher.Deployer
                     PrintVersion();
                     return 0;
                 }
+
+                if (options.DeploymentFilePaths == null || options.DeploymentFilePaths.Count == 0)
+                {
+                    Console.WriteLine(options.GetUsage());
+                }
+
                 Utils.Quiet = options.Quiet || options.GetBinPath;
                 var deployer = new Deployer(options.DeploymentFilePaths, options.BinPath, options.InstallPath, options.OutputProcessJson);
                 if (options.GetBinPath)
@@ -105,19 +111,9 @@ namespace CSLauncher.Deployer
                     return 0;
                 }
 
-                if (options.Clean)
+                if (!options.DryRun)
                 {
-                    deployer.Clean();
-                }
-                else
-                {
-                    if (!options.DryRun)
-                    {
-                        deployer.ProcessPackages();
-                        deployer.ProcessTools();
-                        deployer.ProcessCommands();
-                        deployer.CleanUnused();
-                    }
+                    deployer.Run(options.Clean, options.Toolset);
                 }
 
                 return 0;
