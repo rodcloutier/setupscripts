@@ -142,6 +142,8 @@ project "Packager"
     language "C#"
     targetdir "Build/bin/%{cfg.buildcfg}"
 
+    nugetreferences ( "Build/Packager", { "CommandLineParser", "YamlDotNet" } )
+
     links     { "System" }
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
