@@ -203,7 +203,7 @@ namespace CSLauncher.Deployer
                         packageInstallPath = package.InstallPath;
                     }
 
-                    List<Tool> newTools = InitTools(toolset.Tools, packageInstallPath, deploymentFile);
+                    List<Tool> newTools = InitTools(toolset.Id, toolset.Tools, packageInstallPath, deploymentFile);
                     if (toolsDict.ContainsKey(toolset.Id))
                         Utils.Log("Overriding toolset {0} with the one on deployment file {1}", toolset.Id, deploymentFile.FileName);
                     else
@@ -258,7 +258,7 @@ namespace CSLauncher.Deployer
             return null;
         }
 
-        private List<Tool> InitTools(DeploymentFile.Tool[] fileTools, string packageInstallPath, DeploymentFile deploymentFile)
+        private List<Tool> InitTools(string toolset, DeploymentFile.Tool[] fileTools, string packageInstallPath, DeploymentFile deploymentFile)
         {
             var tools = new List<Tool>();
             foreach (var fileTool in fileTools)
@@ -285,10 +285,10 @@ namespace CSLauncher.Deployer
                 switch (fileTool.Type)
                 {
                     case "exe":
-                        tools.Add(new ExeTool(fileTool.Aliases, toolInstallPath, fileTool.Blocking, InitEnvVariables(fileTool.EnvVariables)));
+                        tools.Add(new ExeTool(toolset, fileTool.Aliases, toolInstallPath, fileTool.Blocking, InitEnvVariables(fileTool.EnvVariables)));
                         break;
                     case "bash":
-                        tools.Add(new BashTool(fileTool.Aliases, toolInstallPath, InitEnvVariables(fileTool.EnvVariables)));
+                        tools.Add(new BashTool(toolset, fileTool.Aliases, toolInstallPath, InitEnvVariables(fileTool.EnvVariables)));
                         break;
                     default:
                         throw new InvalidDataException(string.Format("Tool type {0} not supported", fileTool.Type));

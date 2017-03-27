@@ -33,19 +33,38 @@ namespace CSLauncher.Deployer
 
         internal Deployment Deployment { get; }
 
-        public void Clean()
+        internal void Run(bool clean, string toolset)
         {
-            if (Directory.Exists(Deployment.InstallPath))
+            if (clean)
             {
-                Directory.Delete(Deployment.InstallPath, true);
+                CleanAll();
             }
-            if (Directory.Exists(Deployment.BinPath))
+            else
             {
-                Directory.Delete(Deployment.BinPath, true);
+                if (string.IsNullOrEmpty(toolset))
+                {
+                    ProcessPackages();
+                    ProcessTools();
+                    ProcessCommands();
+                    CleanOutdated();
+                }
+                else
+                {
+                    foreach (var tool in Deployment.Tools)
+                    {
+                        if (tool.Toolset == toolset)
+                            tool.Install(Deployment);
+                    }
+                    foreach (var tool in Deployment.Tools)
+                    {
+                        if (tool.Toolset == toolset)
+                            tool.PostInstall(Deployment);
+                    }
+                }
             }
         }
 
-        public void ProcessPackages()
+        private void ProcessPackages()
         {
             Directory.CreateDirectory(Deployment.InstallPath);
 
@@ -64,7 +83,7 @@ namespace CSLauncher.Deployer
             Task.WaitAll(tasks.ToArray());
         }
 
-        public void ProcessTools()
+        private void ProcessTools()
         {
             Directory.CreateDirectory(Deployment.BinPath);
 
@@ -80,7 +99,7 @@ namespace CSLauncher.Deployer
             Task.WaitAll(tasks.ToArray());
         }
 
-        public void ProcessCommands()
+        private void ProcessCommands()
         {
             foreach (var tool in Deployment.Tools)
             {
@@ -88,21 +107,36 @@ namespace CSLauncher.Deployer
             }
         }
 
-        public void CleanUnused()
+        private void CleanAll()
+        {
+            CleanPackages(new Func<DateTime, bool>(dateTime => { return true; }));
+            CleanTools(new Func<DateTime, bool>(dateTime => { return true; }));
+        }
+
+        private void CleanOutdated()
+        {
+            CleanPackages(new Func<DateTime, bool>(dateTime => { return dateTime != Deployment.TimeStamp; }));
+            CleanTools(new Func<DateTime, bool>(dateTime => { return dateTime != Deployment.TimeStamp; }));
+        }
+
+        private void CleanPackages(Func<DateTime, bool> func)
         {
             foreach (string directory in Directory.GetDirectories(Deployment.InstallPath))
             {
                 string sentinelFile = Path.Combine(directory, "__deployer__");
-                if (!File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != Deployment.TimeStamp)
+                if (File.Exists(sentinelFile) && func(File.GetLastWriteTimeUtc(sentinelFile)))
                 {
                     Utils.Log("Deleting unused package {0}", directory);
                     Directory.Delete(directory, true);
                 }
             }
+        }
 
+        private void CleanTools(Func<DateTime, bool> func)
+        {
             foreach (string file in Directory.GetFiles(Deployment.BinPath, "*.cfg"))
             {
-                if (File.GetLastWriteTimeUtc(file) != Deployment.TimeStamp)
+                if (func(File.GetLastWriteTimeUtc(file)))
                 {
                     Utils.Log("Deleting unused alias {0}", Path.GetFileNameWithoutExtension(file));
 

@@ -13,14 +13,19 @@ namespace CSLauncher.Deployer
 
         [DataMember(Name = "binPath")]
         public string BinPath { get; set; }
+
         [DataMember(Name = "installPath")]
         public string InstallPath { get; set; }
+
         [DataMember(Name = "httpProxy")]
         public string HttpProxy { get; set; }
+
         [DataMember(Name = "repositories")]
         public Repository[] Repositories { get; set; }
+
         [DataMember(Name = "packages")]
         public Package[] Packages { get; set; }
+
         [DataMember(Name = "toolsets")]
         public Toolset[] Toolsets { get; set; }
 
@@ -29,8 +34,10 @@ namespace CSLauncher.Deployer
         {
             [DataMember(Name = "id")]
             public string Id { get; set; }
+
             [DataMember(Name = "packageSpec")]
             public string PackageSpec { get; set; }
+
             [DataMember(Name = "tools")]
             public Tool[] Tools { get; set; }
         }
@@ -40,8 +47,10 @@ namespace CSLauncher.Deployer
         {
             [DataMember(Name = "id")]
             public string Id { get; set; }
+
             [DataMember(Name = "type")]
             public string Type { get; set; }
+
             [DataMember(Name = "source")]
             public string Source { get; set; }
         }
@@ -51,8 +60,10 @@ namespace CSLauncher.Deployer
         {
             [DataMember(Name = "id")]
             public string Id { get; set; }
+
             [DataMember(Name = "version")]
             public string Version { get; set; }
+
             [DataMember(Name = "sourceId")]
             public string SourceID { get; set; }
         }
@@ -62,14 +73,19 @@ namespace CSLauncher.Deployer
         {
             [DataMember(Name = "type")]
             public string Type { get; set; }
+
             [DataMember(Name = "path")]
             public string Path { get; set; }
+
             [DataMember(Name = "blocking")]
             public bool Blocking { get; set; }
+
             [DataMember(Name = "envVariables")]
             public EnvVariable[] EnvVariables { get; set; }
+
             [DataMember(Name = "commands")]
             public Command[] Commands { get; set; }
+
             [DataMember(Name = "aliases")]
             public string[] Aliases { get; set; }
 
@@ -86,8 +102,10 @@ namespace CSLauncher.Deployer
         {
             [DataMember(Name = "filePath")]
             public string FilePath { get; set; }
+
             [DataMember(Name = "args")]
             public string Arguments { get; set; }
+
             [DataMember(Name = "envVariables")]
             public EnvVariable[] EnvVariables { get; set; }
         }

@@ -1,4 +1,7 @@
 using CSLauncher.LauncherLib;
+using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace CSLauncher.Deployer
 {
@@ -15,24 +18,21 @@ namespace CSLauncher.Deployer
         internal string Arguments { get; }
         internal EnvVariable[] EnvVariables { get; }
 
-        public void Run()
+        public void Run(Deployment deployment)
         {
-            /*
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.UseShellExecute = false;
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
-            startInfo.FileName = Path.Combine(Deployment.BinPath, file);
-            startInfo.Arguments = arguments;
+            startInfo.FileName = Path.Combine(deployment.BinPath, FilePath);
+            startInfo.Arguments = Arguments;
 
-            foreach (EnvVariable envVariable in envVariables)
+            foreach (EnvVariable envVariable in EnvVariables)
             {
-                string val = GetFinalValue(envVariable.Value);
-                Utils.AddOrSetEnvVariable(startInfo.EnvironmentVariables, envVariable.Key, val);
+                LauncherLib.Utils.AddOrSetEnvVariable(startInfo.EnvironmentVariables, envVariable.Key, envVariable.Value);
             }
 
             Process p = Process.Start(startInfo);
             p.WaitForExit();
-            */
         }
     }
 }

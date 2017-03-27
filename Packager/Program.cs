@@ -12,21 +12,30 @@ namespace CSLauncher.Packager
         [Option("version", HelpText = "Shows the version")]
         public bool Version { get; set; }
 
-        [ValueList(typeof(List<string>))]
-        public IList<string> InputFiles { get; set; }
+        [Option("package-format", HelpText = "Path to use to override 'binPath' in the config file")]
+        public string PackageFormat { get; set; }
+
+        [Option("package-name", HelpText = "Path to use to override 'binPath' in the config file")]
+        public string PackageName { get; set; }
+
+        [Option("package-version", HelpText = "Path to use to override 'binPath' in the config file")]
+        public string PackageVersion { get; set; }
+
+        [ValueOption(0)]
+        public string Input { get; set; }
 
         [HelpOption]
         public string GetUsage()
         {
             var help = new HelpText
             {
-                Heading = new HeadingInfo("<<app title>>", "<<app version>>"),
-                Copyright = new CopyrightInfo("<<app author>>", 2017),
+                Heading = HeadingInfo.Default,
+                Copyright = CopyrightInfo.Default,
                 AdditionalNewLineAfterOption = true,
                 AddDashesToOption = true
             };
-            help.AddPreOptionsLine("Deployer expect to read in at minimum one json or yml deployment file that defines the files to deploy/install");
-            help.AddPreOptionsLine("Usage: Deployer.exe [options] <FILES>");
+            help.AddPreOptionsLine("Packager formats a directory containing a package to a Deployer compliant format");
+            help.AddPreOptionsLine("Usage: Packager.exe options <INPUT>");
             help.AddPreOptionsLine("  where:");
 
             help.AddOptions(this);
@@ -72,6 +81,10 @@ namespace CSLauncher.Packager
                     return 0;
                 }
 
+                if (!File.Exists(options.Input) && !Directory.Exists(options.Input))
+                {
+                    return 1;
+                }
 
                 return 0;
             }

@@ -7,12 +7,13 @@ namespace CSLauncher.Deployer
 {
     abstract class Tool
     {
-        internal Tool(string[] aliases)
+        internal Tool(string toolset, string[] aliases)
         {
+            Toolset = toolset;
             Aliases = aliases;
             Commands = new List<Command>();
         }
-
+        internal string Toolset { get; }
         internal string[] Aliases { get; }
         internal List<Command> Commands { get; }
         internal virtual EnvVariable[] EnvVariables { get; }
@@ -23,7 +24,7 @@ namespace CSLauncher.Deployer
         {
             foreach (var command in Commands)
             {
-                command.Run();
+                command.Run(deployment);
             }
         }
     }
@@ -31,8 +32,8 @@ namespace CSLauncher.Deployer
   
     internal class ExeTool : Tool
     {
-        internal ExeTool(string[] aliases, string toolPath, bool blocking, EnvVariable[] envVariables)
-            : base(aliases)
+        internal ExeTool(string toolset, string[] aliases, string toolPath, bool blocking, EnvVariable[] envVariables)
+            : base(toolset, aliases)
         {
             ToolPath = toolPath;
             Blocking = blocking;
@@ -69,8 +70,8 @@ namespace CSLauncher.Deployer
 
     internal class BashTool : Tool
     {
-        internal BashTool(string[] aliases, string toolPath, EnvVariable[] envVariables)
-            : base(aliases)
+        internal BashTool(string toolset, string[] aliases, string toolPath, EnvVariable[] envVariables)
+            : base(toolset, aliases)
         {
             ToolPath = toolPath;
             EnvVariables = envVariables;
