@@ -20,6 +20,11 @@ namespace CSLauncher.Deployer
             throw new NotImplementedException();
         }
 
+        internal virtual bool PreInstallPackage(Deployment deployment, Package p)
+        {
+            return true;
+        }
+
         internal virtual void InstallPackage(Deployment deployment, Package p)
         {
             throw new NotImplementedException();
@@ -42,6 +47,12 @@ namespace CSLauncher.Deployer
         internal override string GetInstallPath(Package p)
         {
             return Path.Combine(InstallPath, p.ToFullString());
+        }
+
+        internal override bool PreInstallPackage(Deployment deployment, Package p)
+        {
+            string sentinelFile = Path.Combine(p.InstallPath, "__deployer__");
+            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
         }
 
         internal override void InstallPackage(Deployment deployment, Package p)
@@ -94,6 +105,13 @@ namespace CSLauncher.Deployer
         {
             return Path.Combine(InstallPath, p.ToFullString());
         }
+
+        internal override bool PreInstallPackage(Deployment deployment, Package p)
+        {
+            string sentinelFile = Path.Combine(p.InstallPath, "__deployer__");
+            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
+        }
+
         internal override void InstallPackage(Deployment deployment, Package p)
         {
             Utils.Log("Installing Package {0} from {1}", p.ToFullString(), Source);
@@ -131,6 +149,12 @@ namespace CSLauncher.Deployer
 
         IPackageRepository NugetRepo { get; }
         PackageManager PackageManager { get; }
+
+        internal override bool PreInstallPackage(Deployment deployment, Package p)
+        {
+            string sentinelFile = Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version), "__deployer__");
+            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
+        }
 
         internal override string GetInstallPath(Package p)
         {

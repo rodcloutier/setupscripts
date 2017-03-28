@@ -18,6 +18,17 @@ namespace CSLauncher.Deployer
         internal List<Command> Commands { get; }
         internal virtual EnvVariable[] EnvVariables { get; }
 
+        internal virtual bool PreInstall(Deployment deployment)
+        {
+            foreach (var alias in Aliases)
+            {
+                string configPath = Path.Combine(deployment.BinPath, alias) + ".cfg";
+                if (!File.Exists(configPath) || File.GetLastWriteTimeUtc(configPath) != deployment.TimeStamp)
+                    return true;
+            }
+            return false;
+        }
+
         internal virtual void Install(Deployment deployment) { }
 
         internal virtual void PostInstall(Deployment deployment)
