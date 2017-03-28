@@ -32,7 +32,6 @@ namespace CSLauncher.Deployer
         }
 
         internal Deployment Deployment { get; }
-        private List<Action> ToolPostInstallActions { get; set; }
 
         internal void Run(bool clean, string toolset)
         {
@@ -46,7 +45,6 @@ namespace CSLauncher.Deployer
                 {
                     ProcessPackages();
                     ProcessTools();
-                    ProcessCommands();
                     CleanOutdated();
                 }
                 else
@@ -55,11 +53,6 @@ namespace CSLauncher.Deployer
                     {
                         if (tool.Toolset == toolset)
                             tool.Install(Deployment);
-                    }
-                    foreach (var tool in Deployment.Tools)
-                    {
-                        if (tool.Toolset == toolset)
-                            tool.PostInstall(Deployment);
                     }
                 }
             }
@@ -75,7 +68,7 @@ namespace CSLauncher.Deployer
                 foreach (var package in entry.Value)
                 {
                     if (package.IsUsed && package.PreInstall(Deployment))
-                        tasks.Add(Task.Run(() => { package.Install(Deployment); }));
+                        tasks.Add(Task.Run(() => { package.Install(Deployment); package.PostInstall(Deployment); }));
                     else
                         Utils.Log("Warining: Unused package {0}-{1}", entry.Key, package.Version.ToFullString());
                 }
@@ -92,25 +85,15 @@ namespace CSLauncher.Deployer
             Utils.CopyFileIfNewer(Deployment.LauncherLibPath, launcherLibPath);
 
             var tasks = new List<Task>();
-            ToolPostInstallActions = new List<Action>();
             foreach (var tool in Deployment.Tools)
             {
                 if (tool.PreInstall(Deployment))
                 {
-                    tasks.Add(Task.Run(() => { tool.Install(Deployment); }));
-                    ToolPostInstallActions.Add(() => { tool.PostInstall(Deployment); });
+                    tasks.Add(Task.Run(() => { tool.Install(Deployment); })); 
                 }
             }
 
             Task.WaitAll(tasks.ToArray());
-        }
-
-        private void ProcessCommands()
-        {
-            foreach (var action in ToolPostInstallActions)
-            {
-                action.Invoke();
-            }
         }
 
         private void CleanAll()

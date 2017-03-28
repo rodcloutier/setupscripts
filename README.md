@@ -41,13 +41,13 @@ packages:
     sourceId: local
     commands:
       - filePath: python.exe
-		args: -m pip install -U pip
-		envVariables: &HTTP_PROXY_ENV
+        args: -m pip install -U pip
+        envVariables: &HTTP_PROXY_ENV
           - key: HTTP_PROXY
-			value: &HTTP_PROXY
+            value: *HTTP_PROXY
           - key: HTTPS_PROXY
-			value: &HTTP_PROXY
-	  - filePath: python.exe
+            value: *HTTP_PROXY
+      - filePath: python.exe
         args: -m pip install pylint
         envVariables: *HTTP_PROXY_ENV
       - filePath: python.exe

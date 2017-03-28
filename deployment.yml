@@ -1,5 +1,5 @@
 binPath: '%USERPROFILE%\testbin'
-httpProxy: &HTTP_PROXY null
+httpProxy: &HTTP_PROXY http://proxy.mdc.ubisoft.org:3128
 
 repositories:
   - id: local
@@ -13,15 +13,15 @@ packages:
   - id: CPython
     version: "3.5.2-amd64"
     sourceId: local
-	commands:
+    commands:
       - filePath: python.exe
-		args: -m pip install -U pip
-		envVariables: &HTTP_PROXY_ENV
+        args: -m pip install -U pip
+        envVariables: &HTTP_PROXY_ENV
           - key: HTTP_PROXY
-			value: &HTTP_PROXY
+            value: *HTTP_PROXY
           - key: HTTPS_PROXY
-			value: &HTTP_PROXY
-	  - filePath: python.exe
+            value: *HTTP_PROXY
+      - filePath: python.exe
         args: -m pip install pylint
         envVariables: *HTTP_PROXY_ENV
       - filePath: python.exe

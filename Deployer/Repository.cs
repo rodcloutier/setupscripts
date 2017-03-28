@@ -25,22 +25,9 @@ namespace CSLauncher.Deployer
             throw new NotImplementedException();
         }
 
-        internal virtual bool PreInstallPackage(Deployment deployment, Package p)
-        {
-            string sentinelFile = Path.Combine(p.DownloadPath, "__deployer__");
-            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
-        }
-
         internal virtual void InstallPackage(Deployment deployment, Package p)
         {
             throw new NotImplementedException();
-        }
-
-        internal virtual void PostInstallPackage(Deployment deployment, Package p)
-        {
-            string sentinelFile = Path.Combine(p.DownloadPath, "__deployer__");
-            using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
-            File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
     }
 
@@ -76,20 +63,17 @@ namespace CSLauncher.Deployer
             string remoteZipFilePath = Source + zipFileName;
             string localZipFilePath = InstallPath + '\\' + zipFileName;
 
-            if (!Directory.Exists(p.InstallPath))
+            Utils.Log("--Downloading {0}", remoteZipFilePath);
+            using (var client = new WebClient())
             {
-                Utils.Log("--Downloading {0}", remoteZipFilePath);
-                using (var client = new WebClient())
-                {
-                    client.DownloadFile(remoteZipFilePath, localZipFilePath);
-                }
-
-                Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
-                ZipFile.ExtractToDirectory(localZipFilePath, packageInstallPath);
-
-                Utils.Log("--Deleting {0}", localZipFilePath);
-                File.Delete(localZipFilePath);
+                client.DownloadFile(remoteZipFilePath, localZipFilePath);
             }
+
+            Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
+            ZipFile.ExtractToDirectory(localZipFilePath, packageInstallPath);
+
+            Utils.Log("--Deleting {0}", localZipFilePath);
+            File.Delete(localZipFilePath);
         }
     }
 
@@ -129,17 +113,14 @@ namespace CSLauncher.Deployer
             string remoteZipFilePath = Source + zipFileName;
             string localZipFilePath = InstallPath + '\\' + zipFileName;
 
-            if (!Directory.Exists(packageInstallPath))
-            {
-                Utils.Log("--Copying {0}", remoteZipFilePath);
-                File.Copy(remoteZipFilePath, localZipFilePath);
+            Utils.Log("--Copying {0}", remoteZipFilePath);
+            File.Copy(remoteZipFilePath, localZipFilePath);
 
-                Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
-                ZipFile.ExtractToDirectory(localZipFilePath, packageInstallPath);
+            Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
+            ZipFile.ExtractToDirectory(localZipFilePath, packageInstallPath);
 
-                Utils.Log("--Deleting {0}", localZipFilePath);
-                File.Delete(localZipFilePath);
-            }
+            Utils.Log("--Deleting {0}", localZipFilePath);
+            File.Delete(localZipFilePath);
         }
     }
 
