@@ -22,11 +22,21 @@ namespace CSLauncher.Deployer
         {
             get { return Repository.GetInstallPath(this); }
         }
+        internal string DownloadPath
+        {
+            get { return Repository.GetDownloadPath(this); }
+        }
         internal bool IsUsed { get; set; }
 
-        internal bool PreInstall(Deployment deployment) { return Repository.PreInstallPackage(deployment, this); }
+        internal bool PreInstall(Deployment deployment)
+        {
+            return Repository.PreInstallPackage(deployment, this);
+        }
 
-        internal void Install(Deployment deployment) { Repository.InstallPackage(deployment, this); }
+        internal void Install(Deployment deployment)
+        {
+            Repository.InstallPackage(deployment, this);
+        }
 
         internal string ToFullString() { return PackageId + "-" + Version.ToFullString(); }
     }
