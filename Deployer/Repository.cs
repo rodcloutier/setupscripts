@@ -20,14 +20,27 @@ namespace CSLauncher.Deployer
             throw new NotImplementedException();
         }
 
+        internal virtual string GetDownloadPath(Package p)
+        {
+            throw new NotImplementedException();
+        }
+
         internal virtual bool PreInstallPackage(Deployment deployment, Package p)
         {
-            return true;
+            string sentinelFile = Path.Combine(p.DownloadPath, "__deployer__");
+            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
         }
 
         internal virtual void InstallPackage(Deployment deployment, Package p)
         {
             throw new NotImplementedException();
+        }
+
+        internal virtual void PostInstallPackage(Deployment deployment, Package p)
+        {
+            string sentinelFile = Path.Combine(p.DownloadPath, "__deployer__");
+            using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
+            File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
     }
 
@@ -49,10 +62,9 @@ namespace CSLauncher.Deployer
             return Path.Combine(InstallPath, p.ToFullString());
         }
 
-        internal override bool PreInstallPackage(Deployment deployment, Package p)
+        internal override string GetDownloadPath(Package p)
         {
-            string sentinelFile = Path.Combine(p.InstallPath, "__deployer__");
-            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
+            return GetInstallPath(p);
         }
 
         internal override void InstallPackage(Deployment deployment, Package p)
@@ -78,9 +90,6 @@ namespace CSLauncher.Deployer
                 Utils.Log("--Deleting {0}", localZipFilePath);
                 File.Delete(localZipFilePath);
             }
-            string sentinelFile = Path.Combine(packageInstallPath, "__deployer__");
-            using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
-            File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
     }
 
@@ -106,10 +115,9 @@ namespace CSLauncher.Deployer
             return Path.Combine(InstallPath, p.ToFullString());
         }
 
-        internal override bool PreInstallPackage(Deployment deployment, Package p)
+        internal override string GetDownloadPath(Package p)
         {
-            string sentinelFile = Path.Combine(p.InstallPath, "__deployer__");
-            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
+            return GetInstallPath(p);
         }
 
         internal override void InstallPackage(Deployment deployment, Package p)
@@ -132,9 +140,6 @@ namespace CSLauncher.Deployer
                 Utils.Log("--Deleting {0}", localZipFilePath);
                 File.Delete(localZipFilePath);
             }
-            string sentinelFile = Path.Combine(packageInstallPath, "__deployer__");
-            using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
-            File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
     }
 
@@ -150,24 +155,19 @@ namespace CSLauncher.Deployer
         IPackageRepository NugetRepo { get; }
         PackageManager PackageManager { get; }
 
-        internal override bool PreInstallPackage(Deployment deployment, Package p)
-        {
-            string sentinelFile = Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version), "__deployer__");
-            return !File.Exists(sentinelFile) || File.GetLastWriteTimeUtc(sentinelFile) != deployment.TimeStamp;
-        }
-
         internal override string GetInstallPath(Package p)
         {
-            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version) + "\\tool");
+            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version) + "\\tools");
+        }
+
+        internal override string GetDownloadPath(Package p)
+        {
+            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version));
         }
 
         internal override void InstallPackage(Deployment deployment, Package p)
         {
             PackageManager.InstallPackage(p.PackageId, p.Version);
-
-            string sentinelFile = Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version), "__deployer__");
-            using (var file = File.Open(sentinelFile, FileMode.OpenOrCreate)) { }
-            File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
     }
 }
