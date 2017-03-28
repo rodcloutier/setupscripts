@@ -159,6 +159,20 @@ namespace CSLauncher.Deployer
                         Utils.Log("Using package {0}", filePackage.Id);
 
                     packagesDict[filePackage.Id][filePackage.Id + "-" + filePackage.Version] = package;
+
+                    if (filePackage.Commands != null && filePackage.Commands.Length > 0)
+                    {
+                        var commandList = package.Commands;
+                        foreach (var fileCommand in filePackage.Commands)
+                        {
+                            string commandPath = Environment.ExpandEnvironmentVariables(fileCommand.FilePath); ;
+                            if (!string.IsNullOrEmpty(commandPath) && !Path.IsPathRooted(commandPath))
+                            {
+                                commandPath = Path.GetFullPath(Path.Combine(package.InstallPath, commandPath));
+                            }
+                            commandList.Add(new Command(commandPath, fileCommand.Arguments, InitEnvVariables(fileCommand.EnvVariables)));
+                        }
+                    }
                 }
             }
             var packages = new Dictionary<string, List<Package>>();
@@ -295,21 +309,6 @@ namespace CSLauncher.Deployer
                 }
 
                 AddConfigMapping("tool-" + fileTool.Aliases[0], toolInstallPath);
-
-                if (fileTool.Commands != null && fileTool.Commands.Length > 0)
-                {
-                    var commandList = tools.Last().Commands;
-                    foreach (var fileCommand in fileTool.Commands)
-                    {
-                        string commandPath = Environment.ExpandEnvironmentVariables(fileCommand.FilePath); ;
-                        if (!string.IsNullOrEmpty(commandPath) && !Path.IsPathRooted(commandPath))
-                        {
-                            commandPath = Path.GetFullPath(Path.Combine(packageInstallPath, commandPath));
-                        }
-                        commandList.Add(new Command(commandPath, fileCommand.Arguments, InitEnvVariables(fileCommand.EnvVariables)));
-                    }
-                    
-                }
             }
 
             return tools;
@@ -328,6 +327,22 @@ namespace CSLauncher.Deployer
 
         private void FixupConfigValues()
         {
+            foreach (var entry in Packages)
+            {
+                foreach (var package in entry.Value)
+                {
+                    foreach (var command in package.Commands)
+                    {
+                        if (command.EnvVariables != null)
+                        {
+                            for (int i = 0; i < command.EnvVariables.Length; ++i)
+                            {
+                                SetConfigValue(ref command.EnvVariables[i].Value);
+                            }
+                        }
+                    }
+                }
+            }
             foreach (var tool in Tools)
             {
                 if (tool.EnvVariables != null)
@@ -335,17 +350,6 @@ namespace CSLauncher.Deployer
                     for (int i = 0; i < tool.EnvVariables.Length; ++i)
                     {
                         SetConfigValue(ref tool.EnvVariables[i].Value);
-                    }
-                }
-                
-                foreach (var command in tool.Commands)
-                {
-                    if (command.EnvVariables != null)
-                    {
-                        for (int i = 0; i < command.EnvVariables.Length; ++i)
-                        {
-                            SetConfigValue(ref command.EnvVariables[i].Value);
-                        }
                     }
                 }
             }

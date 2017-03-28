@@ -11,11 +11,10 @@ namespace CSLauncher.Deployer
         {
             Toolset = toolset;
             Aliases = aliases;
-            Commands = new List<Command>();
         }
         internal string Toolset { get; }
         internal string[] Aliases { get; }
-        internal List<Command> Commands { get; }
+
         internal virtual EnvVariable[] EnvVariables { get; }
 
         internal virtual bool PreInstall(Deployment deployment)
@@ -33,10 +32,6 @@ namespace CSLauncher.Deployer
 
         internal virtual void PostInstall(Deployment deployment)
         {
-            foreach (var command in Commands)
-            {
-                command.Run(deployment);
-            }
         }
     }
 
