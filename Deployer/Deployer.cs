@@ -32,6 +32,7 @@ namespace CSLauncher.Deployer
         }
 
         internal Deployment Deployment { get; }
+        private List<Action> ToolPostInstallActions { get; set; }
 
         internal void Run(bool clean, string toolset)
         {
@@ -73,7 +74,7 @@ namespace CSLauncher.Deployer
             {
                 foreach (var package in entry.Value)
                 {
-                    if (package.IsUsed)
+                    if (package.IsUsed && package.PreInstall(Deployment))
                         tasks.Add(Task.Run(() => { package.Install(Deployment); }));
                     else
                         Utils.Log("Warining: Unused package {0}-{1}", entry.Key, package.Version.ToFullString());
@@ -91,9 +92,14 @@ namespace CSLauncher.Deployer
             Utils.CopyFileIfNewer(Deployment.LauncherLibPath, launcherLibPath);
 
             var tasks = new List<Task>();
+            ToolPostInstallActions = new List<Action>();
             foreach (var tool in Deployment.Tools)
             {
-                tasks.Add(Task.Run(() => { tool.Install(Deployment); }));
+                if (tool.PreInstall(Deployment))
+                {
+                    tasks.Add(Task.Run(() => { tool.Install(Deployment); }));
+                    ToolPostInstallActions.Add(() => { tool.PostInstall(Deployment); });
+                }
             }
 
             Task.WaitAll(tasks.ToArray());
@@ -101,9 +107,9 @@ namespace CSLauncher.Deployer
 
         private void ProcessCommands()
         {
-            foreach (var tool in Deployment.Tools)
+            foreach (var action in ToolPostInstallActions)
             {
-                tool.PostInstall(Deployment);
+                action.Invoke();
             }
         }
 
