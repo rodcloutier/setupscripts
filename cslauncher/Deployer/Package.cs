@@ -1,4 +1,5 @@
 using NuGet;
+using System.Collections.Generic;
 
 namespace CSLauncher.Deployer
 {
@@ -10,11 +11,13 @@ namespace CSLauncher.Deployer
             Version = version;
             Repository = repository;
             IsUsed = false;
+            Commands = new List<Command>();
         }
 
         internal string PackageId { get; }
         internal SemanticVersion Version { get; }
         internal Repository Repository { get; }
+        internal List<Command> Commands { get; }
         internal string InstallPath
         {
             get { return Repository.GetInstallPath(this); }

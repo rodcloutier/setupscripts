@@ -66,6 +66,9 @@ namespace CSLauncher.Deployer
 
             [DataMember(Name = "sourceId")]
             public string SourceID { get; set; }
+
+            [DataMember(Name = "commands")]
+            public Command[] Commands { get; set; }
         }
 
         [DataContract]
@@ -82,9 +85,6 @@ namespace CSLauncher.Deployer
 
             [DataMember(Name = "envVariables")]
             public EnvVariable[] EnvVariables { get; set; }
-
-            [DataMember(Name = "commands")]
-            public Command[] Commands { get; set; }
 
             [DataMember(Name = "aliases")]
             public string[] Aliases { get; set; }
