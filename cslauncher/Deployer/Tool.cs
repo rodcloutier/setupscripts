@@ -29,10 +29,6 @@ namespace CSLauncher.Deployer
         }
 
         internal virtual void Install(Deployment deployment) { }
-
-        internal virtual void PostInstall(Deployment deployment)
-        {
-        }
     }
 
   

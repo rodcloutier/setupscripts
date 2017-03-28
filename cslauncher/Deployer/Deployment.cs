@@ -357,7 +357,7 @@ namespace CSLauncher.Deployer
 
         private void AddConfigMapping(string key, string value)
         {
-            ConfigMapping.Add("{" + key + "}", value);
+            ConfigMapping["{" + key + "}"] = value;
         }
 
         private void SetConfigValue(ref string str)

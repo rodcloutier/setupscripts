@@ -43,9 +43,12 @@ namespace CSLauncher.Launcher
             string arguments = cmd.Substring(firstArgIndex, cmd.Length - firstArgIndex).Trim();
             startInfo.Arguments = arguments;
 
-            foreach(EnvVariable envVariable in launcherConfig.EnvVariables)
+            if (launcherConfig.EnvVariables != null)
             {
-                Utils.AddOrSetEnvVariable(startInfo.EnvironmentVariables, envVariable.Key, envVariable.Value);
+                foreach (EnvVariable envVariable in launcherConfig.EnvVariables)
+                {
+                    Utils.AddOrSetEnvVariable(startInfo.EnvironmentVariables, envVariable.Key, envVariable.Value);
+                }
             }
 
             Process p = Process.Start(startInfo);
