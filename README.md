@@ -39,6 +39,20 @@ packages:
   - id: CPython
     version: "3.5.2-amd64"
     sourceId: local
+    commands:
+      - filePath: python.exe
+		args: -m pip install -U pip
+		envVariables: &HTTP_PROXY_ENV
+          - key: HTTP_PROXY
+			value: &HTTP_PROXY
+          - key: HTTPS_PROXY
+			value: &HTTP_PROXY
+	  - filePath: python.exe
+        args: -m pip install pylint
+        envVariables: *HTTP_PROXY_ENV
+      - filePath: python.exe
+        args: -m pip install azure-cli
+        envVariables: *HTTP_PROXY_ENV
   - id: CPython
     version: "2.7.12-amd64"
     sourceId: local
@@ -73,29 +87,13 @@ toolsets:
       - path: python.exe
         aliases: [python, python3]
       - path: Scripts\pip.exe
-        commands:
-          - filePath: python.exe
-            args: -m pip install -U pip
-            envVariables: &HTTP_PROXY_ENV
-              - key: HTTP_PROXY
-                value: &HTTP_PROXY
-              - key: HTTPS_PROXY
-                value: &HTTP_PROXY
         aliases: [pip, pip3]
       - path: Scripts\pylint.exe
-        commands:
-          - filePath: python.exe
-            args: -m pip install pylint
-            envVariables: *HTTP_PROXY_ENV
         aliases: [pylint, pylint3]
   - id: azure-cli-2
     packageSpec: *MAIN_PYTHON
     tools:
       - path: Scripts\az.bat
-        commands:
-          - filePath: python.exe
-            args: -m pip install azure-cli
-            envVariables: *HTTP_PROXY_ENV
         aliases: [az, az2]
 
 ```
