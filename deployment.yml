@@ -1,5 +1,5 @@
 binPath: '%USERPROFILE%\testbin'
-httpProxy: &HTTP_PROXY http://proxy.mdc.ubisoft.org:3128
+httpProxy: &HTTP_PROXY null
 
 repositories:
   - id: local
