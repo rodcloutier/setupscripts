@@ -158,7 +158,7 @@ namespace CSLauncher.Deployer
                     else
                         Utils.Log("Using package {0}", filePackage.Id);
 
-                    packagesDict[filePackage.Id][filePackage.Id + "-" + filePackage.Version] = package;
+                    packagesDict[filePackage.Id][filePackage.Id + "." + filePackage.Version] = package;
 
                     if (filePackage.Commands != null && filePackage.Commands.Length > 0)
                     {

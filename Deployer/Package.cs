@@ -81,6 +81,6 @@ namespace CSLauncher.Deployer
             File.SetLastWriteTimeUtc(sentinelFile, deployment.TimeStamp);
         }
 
-        internal string ToFullString() { return PackageId + "-" + Version.ToFullString(); }
+        internal string ToFullString() { return PackageId + "." + Version.ToFullString(); }
     }
 }

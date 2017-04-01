@@ -100,7 +100,7 @@ namespace CSLauncher.Packager
                     return 1;
                 }
 
-                string outputDir = "Deployer." + options.PackageName + "-" + options.PackageVersion;
+                string outputDir = "Deployer." + options.PackageName + "." + options.PackageVersion;
                 if (Directory.Exists(outputDir))
                 {
                     Directory.Delete(outputDir, true);
