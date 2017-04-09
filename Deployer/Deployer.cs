@@ -69,7 +69,7 @@ namespace CSLauncher.Deployer
                 {
                     if (package.IsUsed && package.PreInstall(Deployment))
                         tasks.Add(Task.Run(() => { package.Install(Deployment); package.PostInstall(Deployment); }));
-                    else
+                    else if (!package.IsUsed)
                         Utils.Log("Warining: Unused package {0}-{1}", entry.Key, package.Version.ToFullString());
                 }
             }
