@@ -22,6 +22,9 @@ namespace CSLauncher.LauncherLib
         [DataMember(Name = "blocking")]
         public bool Blocking;
 
+        [DataMember(Name = "initialArgs")]
+        public string InitialArgs;
+
         [DataMember(Name = "envVariables")]
         public EnvVariable[] EnvVariables;
     }

@@ -41,7 +41,12 @@ namespace CSLauncher.Launcher
                 firstArgIndex++;
             }
             string arguments = cmd.Substring(firstArgIndex, cmd.Length - firstArgIndex).Trim();
+            if (!string.IsNullOrEmpty(launcherConfig.InitialArgs))
+            {
+                arguments = launcherConfig.InitialArgs + " " + arguments;
+            }
             startInfo.Arguments = arguments;
+            
 
             if (launcherConfig.EnvVariables != null)
             {

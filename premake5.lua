@@ -136,35 +136,6 @@ project "Deployer"
         buildaction "Copy"
     filter {}
 
-project "Bootstrap"
-    kind "ConsoleApp"
-    location "Build/Bootstrap"
-    language "C#"
-    targetdir "Build/bin/%{cfg.buildcfg}"
-
-    links     { "System" }
-    links     { "System.Configuration" }
-    links     { "System.Xml" }
-    links     { "System.IO.Compression" }
-    links     { "System.IO.Compression.FileSystem" }
-
-    filter { "system:macosx" }
-        links     { "System.Core" }
-    filter {}
-
-    files { "Bootstrap/**.cs" }
-    files { "Bootstrap/App.config" }
-
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines { "NDEBUG" }
-        optimize "On"
-        symbols "Off"
-    filter {}
-
 project "Packager"
     kind "ConsoleApp"
     location "Build/Packager"

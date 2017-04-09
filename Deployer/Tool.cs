@@ -14,8 +14,10 @@ namespace CSLauncher.Deployer
         }
         internal string Toolset { get; }
         internal string[] Aliases { get; }
-
+        
         internal virtual EnvVariable[] EnvVariables { get; }
+
+        internal string InitalArgs;
 
         internal virtual bool PreInstall(Deployment deployment)
         {
@@ -34,11 +36,12 @@ namespace CSLauncher.Deployer
   
     internal class ExeTool : Tool
     {
-        internal ExeTool(string toolset, string[] aliases, string toolPath, bool blocking, EnvVariable[] envVariables)
+        internal ExeTool(string toolset, string[] aliases, string toolPath, bool blocking, string initialArgs, EnvVariable[] envVariables)
             : base(toolset, aliases)
         {
             ToolPath = toolPath;
             Blocking = blocking;
+            InitalArgs = initialArgs;
             EnvVariables = envVariables;
         }
 
@@ -62,6 +65,7 @@ namespace CSLauncher.Deployer
                 LauncherConfig launcherConfig = new LauncherConfig();
                 launcherConfig.ExePath = ToolPath;
                 launcherConfig.Blocking = Blocking;
+                launcherConfig.InitialArgs = InitalArgs;
                 launcherConfig.EnvVariables = EnvVariables;
 
                 AppInfoSerializer.Write(configPath, launcherConfig);

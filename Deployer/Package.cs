@@ -9,7 +9,7 @@ namespace CSLauncher.Deployer
     {
         internal Package(string packageId, SemanticVersion version, Repository repository)
         {
-            PackageId = "Deployer." + packageId;
+            PackageId = packageId;
             Version = version;
             Repository = repository;
             IsUsed = false;

@@ -10,7 +10,7 @@ namespace CSLauncher.Packager
             <?xml version="1.0"?>
             <package >
                 <metadata>
-                    <id>Deployer.AzCopy</id>
+                    <id>AzCopy</id>
                     <version>1.0.0-tag</version>
                     <authors>jelmansouri</authors>
                     <owners>jelmansouri</owners>
@@ -62,7 +62,7 @@ namespace CSLauncher.Packager
             }
             public PkgMetadata(string id, string version)
             {
-                Id = "Deployer." + id;
+                Id = id;
                 Version = version;
                 Authors = Environment.UserName;
                 Owners = Environment.UserName;
@@ -70,7 +70,7 @@ namespace CSLauncher.Packager
                 ProjectUrl = "https://github.com/jelmansouri/setupscripts/blob/master/cslauncher/README.md";
                 //IconUrl = "http://blog.tech-fellow.net/content/images/2015/08/nuget.png";
                 RequireLicenseAcceptance = false;
-                Description = "Deployer package created uing Deployer.Packager";
+                Description = "Deployer package created using Deployer.Packager";
                 ReleaseNotes = "This is a package of an already existing tool";
                 Copyright = "";
                 Tags = "Deployer " + id;

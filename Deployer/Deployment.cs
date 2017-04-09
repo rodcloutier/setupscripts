@@ -299,7 +299,7 @@ namespace CSLauncher.Deployer
                 switch (fileTool.Type)
                 {
                     case "exe":
-                        tools.Add(new ExeTool(toolset, fileTool.Aliases, toolInstallPath, fileTool.Blocking, InitEnvVariables(fileTool.EnvVariables)));
+                        tools.Add(new ExeTool(toolset, fileTool.Aliases, toolInstallPath, fileTool.Blocking, fileTool.InitialArgs, InitEnvVariables(fileTool.EnvVariables)));
                         break;
                     case "bash":
                         tools.Add(new BashTool(toolset, fileTool.Aliases, toolInstallPath, InitEnvVariables(fileTool.EnvVariables)));
@@ -351,6 +351,10 @@ namespace CSLauncher.Deployer
                     {
                         SetConfigValue(ref tool.EnvVariables[i].Value);
                     }
+                }
+                if (!string.IsNullOrEmpty(tool.InitalArgs))
+                {
+                    SetConfigValue(ref tool.InitalArgs);
                 }
             }
         }

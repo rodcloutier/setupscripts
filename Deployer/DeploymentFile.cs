@@ -83,6 +83,9 @@ namespace CSLauncher.Deployer
             [DataMember(Name = "blocking")]
             public bool Blocking { get; set; }
 
+            [DataMember(Name = "initialArgs")]
+            public string InitialArgs { get; set; }
+
             [DataMember(Name = "envVariables")]
             public EnvVariable[] EnvVariables { get; set; }
 

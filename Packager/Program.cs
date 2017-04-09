@@ -12,13 +12,13 @@ namespace CSLauncher.Packager
         [Option("version", HelpText = "Shows the version")]
         public bool Version { get; set; }
 
-        [Option('f', "package-format", HelpText = "Path to use to override 'binPath' in the config file")]
+        [Option('f', "package-format", HelpText = "Output package format, can be zip or nuget")]
         public string PackageFormat { get; set; }
 
-        [Option('n', "package-name", HelpText = "Path to use to override 'binPath' in the config file")]
+        [Option('n', "package-name", HelpText = "Input package name")]
         public string PackageName { get; set; }
 
-        [Option('v', "package-version", HelpText = "Path to use to override 'binPath' in the config file")]
+        [Option('v', "package-version", HelpText = "Input package version")]
         public string PackageVersion { get; set; }
 
         [ValueOption(0)]
@@ -100,7 +100,7 @@ namespace CSLauncher.Packager
                     return 1;
                 }
 
-                string outputDir = "Deployer." + options.PackageName + "." + options.PackageVersion;
+                string outputDir = options.PackageName + "." + options.PackageVersion;
                 if (Directory.Exists(outputDir))
                 {
                     Directory.Delete(outputDir, true);
@@ -142,8 +142,8 @@ namespace CSLauncher.Packager
                         string nuspecFilePath = Path.Combine(outputDir, options.PackageName + ".nuspec");
                         pkg.Serialize(nuspecFilePath);
                         Console.WriteLine("You need to run now:");
-                        Console.WriteLine("> nuget pack" + nuspecFilePath);
-                        Console.WriteLine("> nuget push .\\Pakcate.nupkg -source \"nugetServerUrl\\path\"");
+                        Console.WriteLine("> nuget pack " + nuspecFilePath);
+                        Console.WriteLine("> nuget push " + outputDir + ".nupkg - source \"nugetServerUrl\\path\"");
                         break;
                     case "zip":
                         ZipFile.CreateFromDirectory(outputDir, outputDir + ".zip");
