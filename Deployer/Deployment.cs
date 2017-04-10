@@ -337,8 +337,11 @@ namespace CSLauncher.Deployer
                         {
                             for (int i = 0; i < command.EnvVariables.Length; ++i)
                             {
-                                SetConfigValue(ref command.EnvVariables[i].Value);
-                                command.EnvVariables[i].Value = Environment.ExpandEnvironmentVariables(command.EnvVariables[i].Value);
+                                if (!string.IsNullOrEmpty(command.EnvVariables[i].Value))
+                                {
+                                    SetConfigValue(ref command.EnvVariables[i].Value);
+                                    command.EnvVariables[i].Value = Environment.ExpandEnvironmentVariables(command.EnvVariables[i].Value);
+                                }
                             }
                         }
                     }
@@ -350,7 +353,10 @@ namespace CSLauncher.Deployer
                 {
                     for (int i = 0; i < tool.EnvVariables.Length; ++i)
                     {
-                        SetConfigValue(ref tool.EnvVariables[i].Value);
+                        if (!string.IsNullOrEmpty(tool.EnvVariables[i].Value))
+                        {
+                            SetConfigValue(ref tool.EnvVariables[i].Value);
+                        }
                     }
                 }
                 if (!string.IsNullOrEmpty(tool.InitalArgs))
