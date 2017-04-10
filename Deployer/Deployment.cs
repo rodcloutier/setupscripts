@@ -338,6 +338,7 @@ namespace CSLauncher.Deployer
                             for (int i = 0; i < command.EnvVariables.Length; ++i)
                             {
                                 SetConfigValue(ref command.EnvVariables[i].Value);
+                                command.EnvVariables[i].Value = Environment.ExpandEnvironmentVariables(command.EnvVariables[i].Value);
                             }
                         }
                     }
