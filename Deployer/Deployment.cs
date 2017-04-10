@@ -292,8 +292,8 @@ namespace CSLauncher.Deployer
                 }
                 else
                 {
-                    if (!Path.IsPathRooted(fileTool.Path))
-                        throw new InvalidDataException(string.Format("Tools without linked packages need rooted paths: {0}", fileTool.Path));
+                    if (!Path.IsPathRooted(toolInstallPath))
+                        throw new InvalidDataException(string.Format("Tools without linked packages need rooted paths: {0}", toolInstallPath));
                 }
 
                 switch (fileTool.Type)
