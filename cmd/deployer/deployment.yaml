@@ -1,0 +1,26 @@
+binPath: "./bin"
+installPath: "./bin/packages"
+httpProxy: "http://proxy.ubisoft.org:3128"
+
+repositories:
+- id: LocalDir
+  type: directory
+  source: ./repo
+
+packages:
+- id: foo
+  version: 1.0.0
+  sourceID: LocalDir
+
+toolsets:
+- id: foo
+  packageSpec: foo
+  tools:
+  - path: bar.sh
+    type: bash
+    envVariables:
+      - key: MYVAR
+        value: MYVALUE
+    aliases: [bar]
+
+
