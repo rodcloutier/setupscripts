@@ -9,7 +9,7 @@ namespace CSLauncher.Deployer
     {
         internal Package(string packageId, SemanticVersion version, Repository repository)
         {
-            PackageId = "Deployer." + packageId;
+            PackageId = packageId;
             Version = version;
             Repository = repository;
             IsUsed = false;
@@ -39,7 +39,7 @@ namespace CSLauncher.Deployer
         internal void Install(Deployment deployment)
         {
             string sentinelFile = Path.Combine(DownloadPath, "__deployer__");
-            
+
             if (!File.Exists(sentinelFile))
             {
                 if (Directory.Exists(DownloadPath))
