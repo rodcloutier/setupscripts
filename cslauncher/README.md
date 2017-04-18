@@ -6,7 +6,8 @@ To build the project you need to add those two tools to you path
 - [Paket](https://github.com/fsprojects/Paket/releases/tag/4.0.7)
 
 Then run:
-premake vs2015 && premake paket
+
+`premake vs2015 && premake paket`
 
 Note that the build has only been tested so far on vs2015.
 
@@ -30,8 +31,8 @@ repositories:
     source: C:\DevTools\sources
 
 # Packages definition, note that packages are downloaded only if used
-# id is the name of the pacakge, version is the complete version of the packages
-# sourceId is the reposisotry used to get it
+# id is the name of the package, version is the complete version of the packages
+# sourceId is the repository used to get it
 packages:
   - id: PortableGit
     version: "2.11.0.3-64-bit"
@@ -97,3 +98,15 @@ toolsets:
         aliases: [az, az2]
 
 ```
+
+## More informations
+
+The replacement syntax for packages is
+```
+{package-"id"-"version"}
+```
+For our example, it could be:
+```
+{package-PortableGit-2.11.0.3-64-bit}
+```
+
