@@ -80,6 +80,10 @@ namespace CSLauncher.Deployer
             : base(toolset, aliases)
         {
             ToolPath = toolPath;
+            if (envVariables == null)
+            {
+                envVariables = new EnvVariable[] { };
+            }
             EnvVariables = envVariables;
         }
 
@@ -93,7 +97,7 @@ namespace CSLauncher.Deployer
                 Utils.Log("Processing bash alias {0}", alias);
                 string aliasPath = Path.Combine(deployment.BinPath, alias);
 
-                Utils.Log("--Creating laucher script {0}", aliasPath);
+                Utils.Log("--Creating launcher script {0}", aliasPath);
 
                 using (StreamWriter file = new StreamWriter(aliasPath))
                 {

@@ -83,7 +83,7 @@ namespace CSLauncher.Deployer
             : base(installPath)
         {
             if (!Directory.Exists(source))
-                throw new InvalidDataException(string.Format("Directory source {0} does't exist", source));
+                throw new InvalidDataException(string.Format("Directory source {0} doesn't exist", source));
 
             if (!source.EndsWith("\\"))
                 Source = source + '\\';

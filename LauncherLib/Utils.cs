@@ -11,10 +11,11 @@ namespace CSLauncher.LauncherLib
     {
         public static void AddOrSetEnvVariable(StringDictionary envVariables, string key, string value)
         {
+            var expandedValue = Environment.ExpandEnvironmentVariables(value);
             if (envVariables.ContainsKey(key))
-                envVariables[key] = value;
+                envVariables[key] = expandedValue;
             else
-                envVariables.Add(key, value);
+                envVariables.Add(key, expandedValue);
         }
     }
 }

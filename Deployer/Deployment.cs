@@ -180,10 +180,10 @@ namespace CSLauncher.Deployer
             {
                 
                 var list = new List<Package>(entry.Value.Count);
-                foreach(var packageEnty in entry.Value)
+                foreach(var packageEntry in entry.Value)
                 {
-                    list.Add(packageEnty.Value);
-                    AddConfigMapping("package-" + packageEnty.Value.ToFullString(), packageEnty.Value.InstallPath);
+                    list.Add(packageEntry.Value);
+                    AddConfigMapping("package-" + packageEntry.Value.ToFullString(), packageEntry.Value.InstallPath);
                 }
                 list.Sort((a, b) => { return b.Version.CompareTo(a.Version); });
                 packages[entry.Key] = list;
@@ -379,7 +379,14 @@ namespace CSLauncher.Deployer
             MatchCollection mc = Regex.Matches(str, @"\{(.*?)\}");
             foreach (Match m in mc)
             {
-                str = str.Replace(m.ToString(), ConfigMapping[m.ToString()]);
+                try
+                {
+                    str = str.Replace(m.ToString(), ConfigMapping[m.ToString()]);
+                }
+                catch (KeyNotFoundException)
+                {
+                    throw new KeyNotFoundException("Failed to find key " + m.ToString());
+                }
             }
         }
     }
