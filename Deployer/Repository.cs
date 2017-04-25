@@ -36,13 +36,10 @@ namespace CSLauncher.Deployer
         internal HttpRepository(string source, string installPath)
             : base(installPath)
         {
-            if (!source.EndsWith("/"))
-                Source = source + '/';
-            else
-                Source = source;
+            Source = new Uri(source);
         }
 
-        string Source { get; }
+        Uri Source { get; }
 
         internal override string GetInstallPath(Package p)
         {
@@ -60,13 +57,14 @@ namespace CSLauncher.Deployer
 
             string packageInstallPath = p.InstallPath;
             string zipFileName = p.ToFullString() + ".zip";
-            string remoteZipFilePath = Source + zipFileName;
-            string localZipFilePath = InstallPath + '\\' + zipFileName;
 
-            Utils.Log("--Downloading {0}", remoteZipFilePath);
+            Uri remoteArchiveUri = new Uri(Source, zipFileName);
+            string localZipFilePath = Path.Combine(InstallPath, zipFileName);
+
+            Utils.Log("--Downloading {0}", remoteArchiveUri);
             using (var client = new WebClient())
             {
-                client.DownloadFile(remoteZipFilePath, localZipFilePath);
+                client.DownloadFile(remoteArchiveUri, localZipFilePath);
             }
 
             Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
@@ -84,15 +82,11 @@ namespace CSLauncher.Deployer
         {
             if (!Directory.Exists(source))
                 throw new InvalidDataException(string.Format("Directory source {0} doesn't exist", source));
-
-            if (!source.EndsWith("\\"))
-                Source = source + '\\';
-            else
-                Source = source;
+            Source = source;
         }
 
         string Source { get; }
-        
+
 
         internal override string GetInstallPath(Package p)
         {
@@ -110,8 +104,8 @@ namespace CSLauncher.Deployer
 
             string packageInstallPath = p.InstallPath;
             string zipFileName = p.ToFullString() + ".zip";
-            string remoteZipFilePath = Source + zipFileName;
-            string localZipFilePath = InstallPath + '\\' + zipFileName;
+            string remoteZipFilePath = Path.Combine(Source, zipFileName);
+            string localZipFilePath = Path.Combine(InstallPath, zipFileName);
 
             Utils.Log("--Copying {0}", remoteZipFilePath);
             File.Copy(remoteZipFilePath, localZipFilePath);

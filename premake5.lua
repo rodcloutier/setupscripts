@@ -65,6 +65,7 @@ project "LauncherLib"
     links     { "System.Runtime.Serialization" }
     links     { "System.Xml" }
 
+
     files { "LauncherLib/**.cs" }
 
     filter "configurations:Debug"
@@ -113,7 +114,15 @@ project "Deployer"
     links     { "LauncherLib" }
 
     filter { "system:macosx" }
+        libdirs {
+            "Build/packages/CommandLineParser/lib/net40",
+            "Build/packages/YamlDotNet/lib/net35",
+            "Build/packages/NuGet.Core/lib/net40-Client"
+        }
         links     { "System.Core" }
+        links     { "CommandLine" }
+        links     { "YamlDotNet" }
+        links     { "NuGet.Core" }
     filter {}
 
     files { "Deployer/**.cs" }
@@ -149,6 +158,14 @@ project "Packager"
     links     { "System.Xml" }
     links     { "System.IO.Compression" }
     links     { "System.IO.Compression.FileSystem" }
+
+    filter { "system:macosx" }
+        libdirs {
+            "Build/packages/CommandLineParser/lib/net40",
+        }
+        links     { "CommandLine" }
+    filter {}
+
 
     files { "Packager/**.cs" }
 

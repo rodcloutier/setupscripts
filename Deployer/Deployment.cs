@@ -69,7 +69,7 @@ namespace CSLauncher.Deployer
             }
 
             installPath = Utils.NormalizePath(installPath);
-            Utils.Log("Using bin path: {0}", installPath);
+            Utils.Log("Using install path: {0}", installPath);
             AddConfigMapping("installPath", installPath);
             return installPath;
         }
@@ -178,7 +178,7 @@ namespace CSLauncher.Deployer
             var packages = new Dictionary<string, List<Package>>();
             foreach (var entry in packagesDict)
             {
-                
+
                 var list = new List<Package>(entry.Value.Count);
                 foreach(var packageEntry in entry.Value)
                 {
@@ -207,7 +207,7 @@ namespace CSLauncher.Deployer
 
                     Package package = GetCompatiblePackage(toolset.PackageSpec);
                     if (!string.IsNullOrEmpty(toolset.PackageSpec) && package == null)
-                        throw new InvalidDataException(string.Format("Could not resolve the packageId for toolset {0} in {1} for file {2}", 
+                        throw new InvalidDataException(string.Format("Could not resolve the packageId for toolset {0} in {1} for file {2}",
                             toolset.Id, toolset.PackageSpec, deploymentFile.FileName));
                     string packageInstallPath = null;
                     if (package != null)

@@ -1,0 +1,80 @@
+binPath: '/Users/rod/dev/ubi/CSLauncher/tests/bin'
+
+repositories:
+  - id: local
+    type: directory
+    source: '/Users/rod/dev/ubi/CSLauncher/tests/fixtures/repo'
+
+packages:
+  - id: sample_scripts
+    version: "1.0"
+    sourceId: local
+
+  # - id: PortableGit
+  #   version: "2.11.0.3-64-bit"
+  #   sourceId: local
+  # - id: CPython
+  #   version: "3.5.2-amd64"
+  #   sourceId: local
+  #   commands:
+  #     - filePath: python.exe
+  #       args: -m pip install -U pip
+  #       envVariables: &HTTP_PROXY_ENV
+  #         - key: HTTP_PROXY
+  #           value: *HTTP_PROXY
+  #         - key: HTTPS_PROXY
+  #           value: *HTTP_PROXY
+  #     - filePath: python.exe
+  #       args: -m pip install pylint
+  #       envVariables: *HTTP_PROXY_ENV
+  #     - filePath: python.exe
+  #       args: -m pip install azure-cli
+  #       envVariables: *HTTP_PROXY_ENV
+  # - id: CPython
+  #   version: "2.7.12-amd64"
+  #   sourceId: local
+  # - id: AzCopy
+  #   version: "1.0.0-tag"
+  #   sourceId: local
+
+toolsets:
+  - id: hello
+    packageSpec: sample_scripts
+    tools:
+      - path: sample.sh
+        type: bash
+        aliases: [hello]
+
+  # - id: azcopy
+    # packageSpec: AzCopy
+    # tools:
+    #   - path: AzCopy.exe
+    #     aliases: [azcopy]
+  # - id: git
+    # packageSpec: PortableGit
+    # tools:
+    #   - path: bin\git.exe
+    #     aliases: [git]
+    #   - path: bin\bash.exe
+    #     aliases: [git-bash]
+  # - id: git
+    # packageSpec: PortableGit
+    # tools:
+    #   - path: bin\git.exe
+    #     aliases: [git]
+    #   - path: bin\bash.exe
+    #     aliases: [git-bash]
+  # - id: python3
+    # packageSpec: &MAIN_PYTHON CPython >= 3.5
+    # tools:
+    #   - path: python.exe
+    #     aliases: [python, python3]
+    #   - path: Scripts\pip.exe
+    #     aliases: [pip, pip3]
+    #   - path: Scripts\pylint.exe
+    #     aliases: [pylint, pylint3]
+  # - id: azure-cli-2
+    # packageSpec: *MAIN_PYTHON
+    # tools:
+    #   - path: Scripts\az.bat
+    #     aliases: [az, az2]

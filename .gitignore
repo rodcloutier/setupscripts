@@ -3,3 +3,7 @@
 
 #launcher
 Build/
+
+# Test artefacts
+tests/bin
+
