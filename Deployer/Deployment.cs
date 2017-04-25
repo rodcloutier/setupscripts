@@ -90,6 +90,12 @@ namespace CSLauncher.Deployer
 
         private Dictionary<string, Repository> InitRepositories(List<DeploymentFile> deploymentFiles)
         {
+            var repositoriesClasses =  new Dictionary<string, System.Type>()
+            {
+                {"directory", typeof(DirectoryRepository)},
+                {"nuget", typeof(NugetRepository)}
+            };
+
             var repositories = new Dictionary<string, Repository>();
             foreach (var deploymentFile in deploymentFiles)
             {
@@ -104,25 +110,15 @@ namespace CSLauncher.Deployer
                     if (string.IsNullOrEmpty(fileRepo.Source))
                         throw new InvalidDataException(string.Format("Missing repository source in {0} for {1}", deploymentFile.FileName, fileRepo.Id));
 
-                    Repository newRepo = null;
-                    string type = fileRepo.Type.ToLower();
-                    switch (type)
-                    {
-                        case "directory":
-                            newRepo = new DirectoryRepository(fileRepo.Source, InstallPath);
-                            break;
-                        case "nuget":
-                            newRepo = new NugetRepository(fileRepo.Source, InstallPath);
-                            break;
-                        default:
-                            throw new InvalidDataException(string.Format("Invalid repository type in {0} for {1}", deploymentFile.FileName, fileRepo.Id));
-                    }
                     if (repositories.ContainsKey(fileRepo.Id))
                         Utils.Log("Overriding repository {0} with the one deployment file {1}", fileRepo.Id, deploymentFile.FileName);
                     else
                         Utils.Log("Using repository {0}", fileRepo.Id);
 
-                    repositories[fileRepo.Id] = newRepo;
+                    var type = fileRepo.Type.ToLower();
+
+                    var args = new object[]{fileRepo.Source, InstallPath};
+                    repositories[fileRepo.Id] = Activator.CreateInstance(repositoriesClasses[type], args) as Repository;
                 }
             }
 
@@ -145,7 +141,7 @@ namespace CSLauncher.Deployer
                     if (string.IsNullOrEmpty(filePackage.SourceID))
                         throw new InvalidDataException(string.Format("Missing package sourceId in {0} for {1}", deploymentFile.FileName, filePackage.Id));
                     if (!Repositories.ContainsKey(filePackage.SourceID))
-                        throw new InvalidDataException(string.Format("sourceId {0} used by package {1}}", filePackage.SourceID, filePackage.Id));
+                        throw new InvalidDataException(string.Format("sourceId {0} used by package {1} not found", filePackage.SourceID, filePackage.Id));
 
                     SemanticVersion semVer = Utils.ParseVersion(filePackage.Version);
                     Package package = new Package(filePackage.Id, semVer, Repositories[filePackage.SourceID]);

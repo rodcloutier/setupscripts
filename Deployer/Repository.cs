@@ -15,7 +15,7 @@ namespace CSLauncher.Deployer
 
         internal string InstallPath { get; }
 
-        internal override string GetInstallPath(Package p)
+        internal virtual string GetInstallPath(Package p)
         {
             return Path.Combine(InstallPath, p.ToFullString());
         }
@@ -33,7 +33,7 @@ namespace CSLauncher.Deployer
 
     internal class HttpRepository : Repository
     {
-        internal HttpRepository(string source, string installPath)
+        public HttpRepository(string source, string installPath)
             : base(installPath)
         {
             Source = new Uri(source);
@@ -67,7 +67,7 @@ namespace CSLauncher.Deployer
 
     internal class DirectoryRepository : Repository
     {
-        internal DirectoryRepository(string source, string installPath)
+        public DirectoryRepository(string source, string installPath)
             : base(installPath)
         {
             if (!Directory.Exists(source))
@@ -99,7 +99,7 @@ namespace CSLauncher.Deployer
 
     internal class NugetRepository : Repository
     {
-        internal NugetRepository(string source, string installPath)
+        public NugetRepository(string source, string installPath)
             : base(installPath)
         {
             NugetRepo = PackageRepositoryFactory.Default.CreateRepository(source);
