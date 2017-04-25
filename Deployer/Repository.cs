@@ -15,14 +15,14 @@ namespace CSLauncher.Deployer
 
         internal string InstallPath { get; }
 
-        internal virtual string GetInstallPath(Package p)
+        internal override string GetInstallPath(Package p)
         {
-            throw new NotImplementedException();
+            return Path.Combine(InstallPath, p.ToFullString());
         }
 
         internal virtual string GetDownloadPath(Package p)
         {
-            throw new NotImplementedException();
+            return GetInstallPath(p);
         }
 
         internal virtual void InstallPackage(Deployment deployment, Package p)
@@ -40,16 +40,6 @@ namespace CSLauncher.Deployer
         }
 
         Uri Source { get; }
-
-        internal override string GetInstallPath(Package p)
-        {
-            return Path.Combine(InstallPath, p.ToFullString());
-        }
-
-        internal override string GetDownloadPath(Package p)
-        {
-            return GetInstallPath(p);
-        }
 
         internal override void InstallPackage(Deployment deployment, Package p)
         {
@@ -87,17 +77,6 @@ namespace CSLauncher.Deployer
 
         string Source { get; }
 
-
-        internal override string GetInstallPath(Package p)
-        {
-            return Path.Combine(InstallPath, p.ToFullString());
-        }
-
-        internal override string GetDownloadPath(Package p)
-        {
-            return GetInstallPath(p);
-        }
-
         internal override void InstallPackage(Deployment deployment, Package p)
         {
             Utils.Log("Installing Package {0} from {1}", p.ToFullString(), Source);
@@ -132,7 +111,7 @@ namespace CSLauncher.Deployer
 
         internal override string GetInstallPath(Package p)
         {
-            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version) + "\\tools");
+            return Path.Combine(GetDownloadPath(p), "tools");
         }
 
         internal override string GetDownloadPath(Package p)
