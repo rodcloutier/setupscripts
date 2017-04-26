@@ -70,7 +70,7 @@ namespace CSLauncher.Deployer
                     if (package.IsUsed && package.PreInstall(Deployment))
                         tasks.Add(Task.Run(() => { package.Install(Deployment); package.PostInstall(Deployment); }));
                     else if (!package.IsUsed)
-                        Utils.Log("Warning: Unused package {0}-{1}", entry.Key, package.Version.ToFullString());
+                        Utils.Log("Warning: Unused package {0}-{1}", entry.Key, package.VersionString());
                 }
             }
 
@@ -89,7 +89,7 @@ namespace CSLauncher.Deployer
             {
                 if (tool.PreInstall(Deployment))
                 {
-                    tasks.Add(Task.Run(() => { tool.Install(Deployment); })); 
+                    tasks.Add(Task.Run(() => { tool.Install(Deployment); }));
                 }
             }
 

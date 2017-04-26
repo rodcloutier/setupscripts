@@ -6,36 +6,24 @@ repositories:
     source: '/Users/rod/dev/ubi/CSLauncher/tests/fixtures/repo'
 
 packages:
+  # The expectation is that this will fetch the archive
+  # sample_scripts.1.0.zip
   - id: sample_scripts
     version: "1.0"
     sourceId: local
 
-  # - id: PortableGit
-  #   version: "2.11.0.3-64-bit"
-  #   sourceId: local
-  # - id: CPython
-  #   version: "3.5.2-amd64"
-  #   sourceId: local
-  #   commands:
-  #     - filePath: python.exe
-  #       args: -m pip install -U pip
-  #       envVariables: &HTTP_PROXY_ENV
-  #         - key: HTTP_PROXY
-  #           value: *HTTP_PROXY
-  #         - key: HTTPS_PROXY
-  #           value: *HTTP_PROXY
-  #     - filePath: python.exe
-  #       args: -m pip install pylint
-  #       envVariables: *HTTP_PROXY_ENV
-  #     - filePath: python.exe
-  #       args: -m pip install azure-cli
-  #       envVariables: *HTTP_PROXY_ENV
-  # - id: CPython
-  #   version: "2.7.12-amd64"
-  #   sourceId: local
-  # - id: AzCopy
-  #   version: "1.0.0-tag"
-  #   sourceId: local
+  # The expectation is that this will fetch the archive
+  # sem_ver_sample_scripts.1.0.0.zip
+  - id: sem_ver_sample_scripts
+    version: "1.0"
+    sourceId: local
+
+  # The expectation is that this will fetch the archive
+  # free_form_version_sample_scripts.tag.zip
+  - id: free_from_version_sample_scripts
+    version: tag
+    sourceId: local
+
 
 toolsets:
   - id: hello
@@ -45,36 +33,33 @@ toolsets:
         type: bash
         aliases: [hello]
 
-  # - id: azcopy
-    # packageSpec: AzCopy
-    # tools:
-    #   - path: AzCopy.exe
-    #     aliases: [azcopy]
-  # - id: git
-    # packageSpec: PortableGit
-    # tools:
-    #   - path: bin\git.exe
-    #     aliases: [git]
-    #   - path: bin\bash.exe
-    #     aliases: [git-bash]
-  # - id: git
-    # packageSpec: PortableGit
-    # tools:
-    #   - path: bin\git.exe
-    #     aliases: [git]
-    #   - path: bin\bash.exe
-    #     aliases: [git-bash]
-  # - id: python3
-    # packageSpec: &MAIN_PYTHON CPython >= 3.5
-    # tools:
-    #   - path: python.exe
-    #     aliases: [python, python3]
-    #   - path: Scripts\pip.exe
-    #     aliases: [pip, pip3]
-    #   - path: Scripts\pylint.exe
-    #     aliases: [pylint, pylint3]
-  # - id: azure-cli-2
-    # packageSpec: *MAIN_PYTHON
-    # tools:
-    #   - path: Scripts\az.bat
-    #     aliases: [az, az2]
+  - id: sem_ver_hello
+    packageSpec: sem_ver_sample_scripts
+    tools:
+      - path: sample.sh
+        type: bash
+        aliases: [sem_ver_hello]
+
+  - id: sem_ver_test_gt_hello
+    packageSpec: sem_ver_sample_scripts >= 1.0
+    tools:
+      - path: sample.sh
+        type: bash
+        aliases: [sem_ver_test_gt_hello]
+
+  - id: free_form_version_hello
+    packageSpec: free_from_version_sample_scripts
+    tools:
+      - path: sample.sh
+        type: bash
+        aliases: [free_from_version_hello]
+
+  - id: free_form_version_explicit_hello
+    packageSpec: free_from_version_sample_scripts == tag
+    tools:
+      - path: sample.sh
+        type: bash
+        aliases: [free_from_version_explicit_hello]
+
+
+

@@ -1,3 +1,4 @@
+using CSLauncher.LauncherLib;
 using NuGet;
 using System;
 using System.Collections.Generic;
@@ -83,7 +84,23 @@ namespace CSLauncher.Deployer
                 throw new InvalidDataException(string.Format("Version info count not be processed for {0}: {1}", version, e.Message));
             }
         }
-        
+
+        internal static void ParseVersionComponent(string version, out SemanticVersion semanticVersion, out VersionComponent versionComponent)
+        {
+            int idx = 0;
+            int filterThreshold = 0;
+            while (idx < version.Length && version[idx] != '-')
+            {
+                if (version[idx++] == '.')
+                    filterThreshold++;
+            }
+            if (filterThreshold == 0)
+            {
+                version = version.Insert(idx, ".0");
+            }
+            versionComponent = (VersionComponent)Math.Min(filterThreshold, (int)VersionComponent.Build);
+            semanticVersion = ParseVersion(version);
+        }
 
         private static Dictionary<string, VersionOp> OpsMapping = new Dictionary<string, VersionOp>() {
             { "==", VersionOp.Equal},
@@ -120,9 +137,8 @@ namespace CSLauncher.Deployer
             }
         }
 
-        internal static void GetPackageSpecComponents(string packageSpec, out string packageId, out VersionOp versionOp, out SemanticVersion semVer, out VersionComponent filterComponent)
+        internal static void ParsePackageSpecComponents(string packageSpec, out string packageId, out VersionOp versionOp, out string packageVersion)
         {
-            string packageVersion;
             var specComponents = packageSpec.Split(' ');
             if (specComponents.Length == 1)
             {
@@ -138,25 +154,15 @@ namespace CSLauncher.Deployer
             }
             else
             {
-                throw new InvalidDataException(string.Format("Invlaid package spec {0}, needs to be \"packageName compOperator x[.y.z.w-tag]", packageSpec));
+                throw new InvalidDataException(string.Format("Invalid package spec {0}, needs to be \"packageName compOperator x[.y.z.w-tag]", packageSpec));
             }
-            int idx = 0;
-            int filterThreshold = 0;
-            while (idx < packageVersion.Length && packageVersion[idx] != '-') { if (packageVersion[idx++] == '.') filterThreshold++; }
-            if (filterThreshold == 0)
-            {
-                packageVersion = packageVersion.Insert(idx, ".0");
-            }
-            semVer = ParseVersion(packageVersion);
-            filterComponent = (VersionComponent)Math.Min(filterThreshold, (int)VersionComponent.Build);
         }
 
-        internal static bool FilterPackage(SemanticVersion specVer1, SemanticVersion packageVer2, VersionComponent filterComponent)
+        private static bool IsPotentialPackage(SemanticVersion specVer1, SemanticVersion packageVer2, VersionComponent filterComponent)
         {
-            bool filterPackage = false;
             if (!string.IsNullOrEmpty(specVer1.SpecialVersion) && specVer1.SpecialVersion != packageVer2.SpecialVersion)
             {
-                filterPackage |= true;
+                return false;
             }
             Version specV = specVer1.Version;
             Version packageV = packageVer2.Version;
@@ -164,26 +170,40 @@ namespace CSLauncher.Deployer
             {
                 case Utils.VersionComponent.Major:
                     if (specV.Major != packageV.Major)
-                        filterPackage |= true;
+                        return false;
                     break;
                 case Utils.VersionComponent.Minor:
                     if (specV.Major != packageV.Major || specV.Minor != packageV.Minor)
-                        filterPackage |= true;
+                        return false;
                     break;
                 case Utils.VersionComponent.Build:
                     if (specV.Major != packageV.Major || specV.Minor != packageV.Minor || specV.Build != specV.Build)
-                        filterPackage |= true;
+                        return false;
                     break;
             }
-            return filterPackage;
+            return true;
         }
 
         internal static bool ValidPackage(SemanticVersion specVer1, SemanticVersion packageVer2, VersionComponent filterComponent, VersionOp versionOp)
         {
+            if (!IsPotentialPackage(specVer1, packageVer2, filterComponent))
+                return false;
+
             Version specV = specVer1.Version;
             Version packageV = packageVer2.Version;
-            
+
             return comparisonFunctions[(int)versionOp](packageV, specV, filterComponent);
+        }
+
+        internal static EnvVariable[] InitEnvVariables(EnvVariable[] envVariables)
+        {
+            EnvVariable[] newEnvVariables = null;
+            if (envVariables != null)
+            {
+                newEnvVariables = new EnvVariable[envVariables.Length];
+                envVariables.CopyTo(newEnvVariables, 0);
+            }
+            return newEnvVariables;
         }
     }
 }

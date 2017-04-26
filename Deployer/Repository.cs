@@ -8,12 +8,14 @@ namespace CSLauncher.Deployer
 {
     internal abstract class Repository
     {
-        internal Repository(string installPath)
+        internal Repository(string installPath, bool requiresSemanticVersion = false)
         {
             InstallPath = installPath;
+            RequiresSemanticVersion = requiresSemanticVersion;
         }
 
         internal string InstallPath { get; }
+        internal bool RequiresSemanticVersion { get; }
 
         internal virtual string GetInstallPath(Package p)
         {
@@ -25,9 +27,14 @@ namespace CSLauncher.Deployer
             return GetInstallPath(p);
         }
 
-        internal virtual void InstallPackage(Deployment deployment, Package p)
+        internal virtual void InstallPackage(Package p, string packageFullString)
         {
             throw new NotImplementedException();
+        }
+
+        internal virtual bool Exists(string packageFullString)
+        {
+            return true;
         }
     }
 
@@ -41,12 +48,17 @@ namespace CSLauncher.Deployer
 
         Uri Source { get; }
 
-        internal override void InstallPackage(Deployment deployment, Package p)
+        internal override bool Exists(string packageFullString)
         {
-            Utils.Log("Installing Package {0} from {1}", p.ToFullString(), Source);
+            throw new NotImplementedException();
+        }
+
+        internal override void InstallPackage(Package p, string packageFullString)
+        {
+            Utils.Log("Installing Package {0} from {1}", packageFullString, Source);
 
             string packageInstallPath = p.InstallPath;
-            string zipFileName = p.ToFullString() + ".zip";
+            string zipFileName = packageFullString + ".zip";
 
             Uri remoteArchiveUri = new Uri(Source, zipFileName);
             string localZipFilePath = Path.Combine(InstallPath, zipFileName);
@@ -77,22 +89,30 @@ namespace CSLauncher.Deployer
 
         string Source { get; }
 
-        internal override void InstallPackage(Deployment deployment, Package p)
+        internal override bool Exists(string packageFullString)
         {
-            Utils.Log("Installing Package {0} from {1}", p.ToFullString(), Source);
+            string zipFileName = packageFullString + ".zip";
+            string remoteZipFilePath = Path.Combine(Source, zipFileName);
+
+            return File.Exists(remoteZipFilePath);
+        }
+
+        internal override void InstallPackage(Package p, string packageFullString)
+        {
+            Utils.Log("Installing Package {0} from {1}", packageFullString, Source);
 
             string packageInstallPath = p.InstallPath;
-            string zipFileName = p.ToFullString() + ".zip";
+            string zipFileName = packageFullString + ".zip";
             string remoteZipFilePath = Path.Combine(Source, zipFileName);
             string localZipFilePath = Path.Combine(InstallPath, zipFileName);
 
             Utils.Log("--Copying {0}", remoteZipFilePath);
             File.Copy(remoteZipFilePath, localZipFilePath);
 
-            Utils.Log("--Unzipping {0} to {1}", localZipFilePath, localZipFilePath);
+            Utils.Log("--Unzipping {0} to {1}", localZipFilePath, packageInstallPath);
             ZipFile.ExtractToDirectory(localZipFilePath, packageInstallPath);
 
-            Utils.Log("--Deleting {0}", localZipFilePath);
+            Utils.Log("--Deleting temp file {0}", localZipFilePath);
             File.Delete(localZipFilePath);
         }
     }
@@ -100,7 +120,7 @@ namespace CSLauncher.Deployer
     internal class NugetRepository : Repository
     {
         public NugetRepository(string source, string installPath)
-            : base(installPath)
+            : base(installPath, true)
         {
             NugetRepo = PackageRepositoryFactory.Default.CreateRepository(source);
             PackageManager = new PackageManager(NugetRepo, InstallPath);
@@ -116,12 +136,12 @@ namespace CSLauncher.Deployer
 
         internal override string GetDownloadPath(Package p)
         {
-            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.Version));
+            return Path.Combine(InstallPath, PackageManager.PathResolver.GetPackageDirectory(p.PackageId, p.SemVersion));
         }
 
-        internal override void InstallPackage(Deployment deployment, Package p)
+        internal override void InstallPackage(Package p, string packageFullString)
         {
-            PackageManager.InstallPackage(p.PackageId, p.Version);
+            PackageManager.InstallPackage(p.PackageId, p.SemVersion);
         }
     }
 }

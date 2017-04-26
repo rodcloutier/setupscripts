@@ -134,54 +134,30 @@ namespace CSLauncher.Deployer
                     continue;
                 foreach (var filePackage in deploymentFile.Packages)
                 {
-                    if (string.IsNullOrEmpty(filePackage.Id))
-                        throw new InvalidDataException(string.Format("Missing package id in {0}", deploymentFile.FileName));
-                    if (string.IsNullOrEmpty(filePackage.Version))
-                        throw new InvalidDataException(string.Format("Missing package version in {0} for {1}", deploymentFile.FileName, filePackage.Id));
-                    if (string.IsNullOrEmpty(filePackage.SourceID))
-                        throw new InvalidDataException(string.Format("Missing package sourceId in {0} for {1}", deploymentFile.FileName, filePackage.Id));
-                    if (!Repositories.ContainsKey(filePackage.SourceID))
-                        throw new InvalidDataException(string.Format("sourceId {0} used by package {1} not found", filePackage.SourceID, filePackage.Id));
+                    Package package = Package.CreatePackage(filePackage, Repositories, deploymentFile.FileName);
 
-                    SemanticVersion semVer = Utils.ParseVersion(filePackage.Version);
-                    Package package = new Package(filePackage.Id, semVer, Repositories[filePackage.SourceID]);
                     if (!packagesDict.ContainsKey(filePackage.Id))
                     {
-                        packagesDict[filePackage.Id] = new Dictionary<string, Package>();
+                        packagesDict[package.PackageId] = new Dictionary<string, Package>();
                     }
-                    if (packagesDict[filePackage.Id].ContainsKey(filePackage.Id))
-                        Utils.Log("Overriding package {0} with the one on deployment file {1}", filePackage.Id, deploymentFile.FileName);
+                    if (packagesDict[package.PackageId].ContainsKey(package.PackageId))
+                        Utils.Log("Overriding package {0} with the one on deployment file {1}", package.PackageId, deploymentFile.FileName);
                     else
-                        Utils.Log("Using package {0}", filePackage.Id);
+                        Utils.Log("Using package {0}", package.PackageId);
 
-                    packagesDict[filePackage.Id][filePackage.Id + "." + filePackage.Version] = package;
-
-                    if (filePackage.Commands != null && filePackage.Commands.Length > 0)
-                    {
-                        var commandList = package.Commands;
-                        foreach (var fileCommand in filePackage.Commands)
-                        {
-                            string commandPath = Environment.ExpandEnvironmentVariables(fileCommand.FilePath); ;
-                            if (!string.IsNullOrEmpty(commandPath) && !Path.IsPathRooted(commandPath))
-                            {
-                                commandPath = Path.GetFullPath(Path.Combine(package.InstallPath, commandPath));
-                            }
-                            commandList.Add(new Command(commandPath, fileCommand.Arguments, InitEnvVariables(fileCommand.EnvVariables)));
-                        }
-                    }
+                    packagesDict[package.PackageId][package.PackageId + "." + package.VersionString()] = package;
                 }
             }
             var packages = new Dictionary<string, List<Package>>();
             foreach (var entry in packagesDict)
             {
-
                 var list = new List<Package>(entry.Value.Count);
                 foreach(var packageEntry in entry.Value)
                 {
                     list.Add(packageEntry.Value);
                     AddConfigMapping("package-" + packageEntry.Value.ToFullString(), packageEntry.Value.InstallPath);
                 }
-                list.Sort((a, b) => { return b.Version.CompareTo(a.Version); });
+                list.Sort((a, b) => { return b.CompareTo(a); });
                 packages[entry.Key] = list;
             }
             return packages;
@@ -241,30 +217,80 @@ namespace CSLauncher.Deployer
 
         private Package GetCompatiblePackage(string packageSpec)
         {
-            if (!string.IsNullOrEmpty(packageSpec))
-            {
-                string packageId;
-                SemanticVersion semVer;
-                Utils.VersionOp vOp;
-                Utils.VersionComponent filterComponent;
-                Utils.GetPackageSpecComponents(packageSpec, out packageId, out vOp, out semVer, out filterComponent);
+            if (string.IsNullOrEmpty(packageSpec))
+                return null;
 
-                if (Packages.ContainsKey(packageId))
+            string packageId;
+            string version;
+            Utils.VersionOp vOp;
+            Utils.ParsePackageSpecComponents(packageSpec, out packageId, out vOp, out version);
+
+            if (!Packages.ContainsKey(packageId))
+                return null;
+
+            try
+            {
+
+                Utils.VersionComponent versionComponent;
+                SemanticVersion semVer = null;
+                Utils.ParseVersionComponent(version, out semVer, out versionComponent);
+
+                Package foundPackage = null;
+                foreach (var potentialPackage in Packages[packageId])
                 {
-                    List<Package> potentialPackages = Packages[packageId];
-                    var filteredPotentialPackages = new List<Package>();
-                    foreach (var potentialPackage in potentialPackages)
+                    // If we have a semantic version in the potentialPackage
+                    if( potentialPackage.SemVersion != null )
                     {
-                        if (!Utils.FilterPackage(semVer, potentialPackage.Version, filterComponent))
-                            filteredPotentialPackages.Add(potentialPackage);
-                    }
-                    foreach (var potentialPackage in filteredPotentialPackages)
-                    {
-                        if (Utils.ValidPackage(semVer, potentialPackage.Version, filterComponent, vOp))
-                            return potentialPackage;
+                        if (Utils.ValidPackage(semVer, potentialPackage.SemVersion, versionComponent, vOp))
+                        {
+                            foundPackage = potentialPackage;
+                            break;
+                        }
                     }
                 }
+                if( foundPackage == null && version == "0")
+                {
+                    // We did not find any semantic version in any package and we are
+                    // not asked for a version
+                    // We take the first one with no sem ver since we have no cue which to
+                    // choose
+                    // TODO. Warn the user if there are more that could be
+                    // resolved?
+                    foreach (var potentialPackage in Packages[packageId])
+                    {
+                        if (potentialPackage.SemVersion == null )
+                        {
+                            foundPackage = potentialPackage;
+                            break;
+                        }
+                    }
+                }
+
+                return foundPackage;
             }
+            catch( InvalidDataException )
+            {
+                // We are in a case where the asked version cannot be resolved to a
+                // semantic version. Try to do an exact compare
+
+                // If any of the packages repository requires semver, bail out...
+                foreach (var package in Packages[packageId])
+                {
+                    if (package.Repository.RequiresSemanticVersion)
+                    {
+                        Utils.Log("Repository {} requires a semantic version. '{1}' is not a semantic version", package.Repository, version);
+                        throw;
+                    }
+                }
+
+                // Find the valid package
+                foreach (var potentialPackage in Packages[packageId])
+                {
+                    if ( version.Equals(potentialPackage.Version) )
+                        return potentialPackage;
+                }
+            }
+
             return null;
         }
 
@@ -295,10 +321,10 @@ namespace CSLauncher.Deployer
                 switch (fileTool.Type)
                 {
                     case "exe":
-                        tools.Add(new ExeTool(toolset, fileTool.Aliases, toolInstallPath, fileTool.Blocking, fileTool.InitialArgs, InitEnvVariables(fileTool.EnvVariables)));
+                        tools.Add(new ExeTool(toolset, fileTool.Aliases, toolInstallPath, fileTool.Blocking, fileTool.InitialArgs, Utils.InitEnvVariables(fileTool.EnvVariables)));
                         break;
                     case "bash":
-                        tools.Add(new BashTool(toolset, fileTool.Aliases, toolInstallPath, InitEnvVariables(fileTool.EnvVariables)));
+                        tools.Add(new BashTool(toolset, fileTool.Aliases, toolInstallPath, Utils.InitEnvVariables(fileTool.EnvVariables)));
                         break;
                     default:
                         throw new InvalidDataException(string.Format("Tool type {0} not supported", fileTool.Type));
@@ -308,17 +334,6 @@ namespace CSLauncher.Deployer
             }
 
             return tools;
-        }
-
-        private EnvVariable[] InitEnvVariables(EnvVariable[] envVariables)
-        {
-            EnvVariable[] newEnvVariables = null;
-            if (envVariables != null)
-            {
-                newEnvVariables = new EnvVariable[envVariables.Length];
-                envVariables.CopyTo(newEnvVariables, 0);
-            }
-            return newEnvVariables;
         }
 
         private void FixupConfigValues()
