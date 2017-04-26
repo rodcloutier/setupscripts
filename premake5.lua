@@ -53,7 +53,7 @@ workspace "CSLauncher"
     configurations { "Debug", "Release" }
     architecture "x86_64"
     location "Build"
-    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71", "YamlDotNet >= 4.1.0", "Nuget.Core >= 2.14" })
+    nugetdependencies ("Build", { "CommandLineParser >= 1.9.71", "YamlDotNet >= 4.1.0", "Nuget.Core >= 2.14", "NUnit < 3.6" })
 
 project "LauncherLib"
     kind "SharedLib"
@@ -144,6 +144,39 @@ project "Deployer"
     configuration "*.json"
         buildaction "Copy"
     filter {}
+
+project "DeployerTests"
+    kind "SharedLib"
+    location "Build/DeployerTests"
+    language "C#"
+    targetdir "Build/bin/%{cfg.buildcfg}"
+
+    nugetreferences ( "Build/Deployer", {"Nuget.Core", "NUnit"} )
+
+    links { "Deployer" }
+
+    filter { "system:macosx" }
+        libdirs {
+            "Build/packages/NuGet.Core/lib/net40-Client",
+            "Build/packages/NUnit/lib/net35"
+        }
+        links     { "NuGet.Core" }
+        links     { "nunit.framework" }
+    filter {}
+
+    files { "tests/Deployer/**.cs" }
+
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines { "NDEBUG" }
+        optimize "On"
+        symbols "Off"
+    filter {}
+
+
 
 project "Packager"
     kind "ConsoleApp"
