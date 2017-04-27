@@ -153,7 +153,8 @@ project "DeployerTests"
 
     nugetreferences ( "Build/Deployer", {"Nuget.Core", "NUnit"} )
 
-    links { "Deployer" }
+    links     { "System" }
+    links     { "Deployer" }
 
     filter { "system:macosx" }
         libdirs {

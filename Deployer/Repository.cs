@@ -1,8 +1,11 @@
-using NuGet;
-using System.IO;
 using System;
-using System.Net;
+using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Net;
+using NuGet;
+
 
 namespace CSLauncher.Deployer
 {
@@ -142,6 +145,91 @@ namespace CSLauncher.Deployer
         internal override void InstallPackage(Package p, string packageFullString)
         {
             PackageManager.InstallPackage(p.PackageId, p.SemVersion);
+        }
+    }
+
+    internal class GitRepository : Repository
+    {
+        public GitRepository(string source, string installPath)
+            : base(installPath)
+        {
+            Source = source;
+        }
+
+        string Source { get; }
+
+
+        // TODO move to utils
+        internal static bool IsPath(string pathCandidate)
+        {
+            System.IO.FileInfo fi = null;
+            try
+            {
+                fi = new System.IO.FileInfo(pathCandidate);
+            }
+            catch (ArgumentException) { }
+            catch (System.IO.PathTooLongException) { }
+            catch (NotSupportedException) { }
+            return !ReferenceEquals(fi, null);
+        }
+
+        // Validate that the requested package git repository exists
+        // and the requested version also exists
+        // Currently does not support git sha1 as version
+        internal override bool Exists(string packageFullString)
+        {
+            // TODO refactor to support . in names
+
+            var components = packageFullString.Split('.');
+            var package = components[0];
+            var version = String.Join(".", components.Skip(1).Take(components.Length - 1).ToArray());
+
+            string repo = "";
+            if (IsPath(Source))
+            {
+                repo = Path.Combine(Source, package);
+            }
+            else
+            {
+                repo = string.Format("{0}/{1}.git", Source, package);
+            }
+
+            var tempRepoPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempRepoPath);
+            var tempRepoContext = "-C " + tempRepoPath;
+            Git.run(tempRepoContext, "init");
+
+            Git.run(tempRepoContext, "remote", "add", "origin", repo);
+
+            try
+            {
+                Git.run(tempRepoContext, "ls-remote", "origin", "--exit-code", "--tags", version);
+            }
+            catch( Exception )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        internal override void InstallPackage(Package p, string packageFullString)
+        {
+            // TODO (rod): If the version is master, we might want to act
+            // differently: refuse, change to sha, always replace, etc.
+
+            Utils.Log("Installing Package {0} from {1}", packageFullString, Source);
+
+            // TODO detect that we might have a full git path?
+            // TODO extract the version from packageFullString
+            var repo = string.Format("{0}/{1}.git", Source, p.PackageId);
+            var installPath = GetInstallPath(p);
+
+            Utils.Log("--Cloning repository {0}", repo.ToString());
+            // Git.run("clone", repo.ToString(), installPath);
+
+            Utils.Log("--Checking out version {0}", p.Version);
+            // Git.run("-C", installPath, "checkout", p.Version);
         }
     }
 }
