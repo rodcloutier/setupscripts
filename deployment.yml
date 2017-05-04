@@ -1,0 +1,124 @@
+version: 2.0
+toolsets:
+
+  # msys2:
+  #   url:
+  #   version:
+  #   tools:
+  #     - path: usr\bin\bash
+  #       aliases: [msys-bash]
+
+  docker:
+    url: https://test.docker.com/builds/Windows/x86_64/docker-17.05.0-ce-rc3.zip
+    version: 17.05.0-ce-rc3
+    tools:
+      - path: docker\docker.exe
+        aliases: [docker]
+
+  GCloudSDK:
+    url: https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-154.0.0-windows-x86_64-bundled-python.zip
+    version: 154.0.0
+    tools:
+      - path: bin\gcloud.cmd
+        # envVariables:
+        #   - key: CLOUDSDK_CORE_DISABLE_PROMPTS
+        #     value: "1"
+        aliases: [gcloud]
+      - path: bin\gsutil.cmd
+        aliases: [gsutil]
+      - path: bin\git-credential-gcloud.cmd
+        aliases: [git-credential-gcloud]
+      - path: bin\bq.cmd
+        aliases: [bq]
+      - path: completion.bash.inc
+        type: bash
+        aliases: [gcloud.completion.bash.inc]
+
+  kubectl:
+    url: https://storage.googleapis.com/kubernetes-release/release/v1.6.2/bin/windows/amd64/kubectl.exe
+    version: 1.6.2
+    tools:
+      - path: kubectl.exe
+        aliases: [kubectl]
+
+  minikube:
+    url: https://storage.googleapis.com/minikube/releases/v0.18.0/minikube-windows-amd64.exe
+    version: 0.18.0
+    tools:
+      - path: minikube.exe
+        aliases: [minikube]
+
+  helm:
+    #url: https://storage.googleapis.com/kubernetes-helm/helm-v{{.version}}-windows-amd64.zip
+    url: https://storage.googleapis.com/kubernetes-helm/helm-v2.4.1-windows-amd64.zip
+    version: 2.4.1
+    tools:
+      - path: helm.exe
+        aliases: [helm]
+    # post-deploy:
+    #   - command:
+    #     args:
+
+  golang:
+    url: https://storage.googleapis.com/golang/go1.8.1.windows-amd64.zip
+    version: 1.8.1
+    tools:
+      - path: bin\go.exe
+        aliases: [go, go18]
+      - path: bin\gofmt.exe
+        aliases: [gofmt, gofmt18]
+      - path: bin\godoc.exe
+        aliases: [godoc, godoc18]
+
+  jq:
+    url: https://github.com/stedolan/jq/releases/download/jq-1.5/jq-win64.exe
+    version: 1.5
+    # This could be implicit
+    tools:
+      - path: jq-win64.exe
+        aliases: [jq]
+
+  # fleet-minikube:
+  #   url: file://ubisoft.org/Projects/TechGroup/Online/fleet/tools/fleet-minikube.1.0.0.zip
+  #   version: 1.0.0
+  #   tools:
+  #     - path: scripts/minikube-create.sh
+  #       type: bash
+  #       aliases: [minikube-create, minikube-create.sh]
+  #     - path: scripts/minikube-env.sh
+  #       type: bash
+  #       aliases: [minikube-env, minikube-env.sh]
+
+  # fleet-helm:
+  #   url: file://ubisoft.org/Projects/TechGroup/Online/fleet/tools/fleet-helm.1.0.0.zip
+  #   version: 1.0.0
+  #   tools:
+  #     - path: helm-init.sh
+  #       type: bash
+  #       aliases: [helm-init, helm-init.sh]
+
+  # fleet-fleet:
+  #   url: file://ubisoft.org/Projects/TechGroup/Online/fleet/tools/fleet-fleet.1.0.0.zip
+  #   version: 1.0.0
+  #   tools:
+  #     - path: fleet-env.sh
+  #       type: bash
+  #       aliases: [fleet-env, fleet-env.sh]
+
+  # fleet-bash_swift:
+  #   url: git@gitlab-ncsa.ubisoft.org:/fleet/bash_swift.git
+  #   version: 1.0.0
+  #   tools:
+  #     - path: bin/swift.sh
+  #       type: bash
+  #       aliases: [swift, swift.sh]
+
+  # fleet-msys2:
+  #   url: file://ubisoft.org/Projects/TechGroup/Online/fleet/tools/fleet-msys2.1.0.0.zip
+  #   version: 1.0.0
+  #   tools:
+  #     - path: msys2-init.sh
+  #       type: bash
+  #       aliases: [msys2-init.sh]
+
+
