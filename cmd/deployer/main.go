@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,38 +28,22 @@ func (toolsetOp *ToolsetOp) CreateTools(binPath string) {
 }
 
 func createTool(binPath, packagePath string, tool setupscripts.Tool) {
-	target := filepath.Join(packagePath, tool.Path)
+
+	toolPath := strings.Replace(tool.Path, "\\", "/", -1)
+	targetPath := filepath.Clean(filepath.Join(packagePath, toolPath))
 	for _, alias := range tool.Aliases {
 
-		toolType := tool.Type
-		if toolType == "" {
-			toolType = "exe"
-		}
+		aliasPath := filepath.Clean(filepath.Join(binPath, alias))
 
-		var createAlias func(string, string, string)
+		// TODO handle launcher (GUI) type which would use launcher app
+		// to start in non blocking mode
+		fmt.Printf("link %s -> %s\n", alias, targetPath)
 
-		switch tool.Type {
-		// case "cmd":
-		case "bash":
-			createAlias = createBashAlias
-		case "exe":
-			createAlias = createExeAlias
-		default:
-			// TODO we could try to auto detect based on extension
-			createAlias = createExeAlias
+		err := os.Symlink(targetPath, aliasPath)
+		if err != nil {
+			log.Fatalln(err)
 		}
-		createAlias(binPath, alias, target)
 	}
-}
-
-func createBashAlias(binPath string, alias string, targetPath string) {
-	aliasPath := filepath.Join(binPath, alias)
-	fmt.Printf("Creating bash alias %s targeting %s\n", aliasPath, targetPath)
-}
-
-func createExeAlias(binPath string, alias string, targetPath string) {
-	aliasPath := filepath.Join(binPath, alias)
-	fmt.Printf("Creating exe alias %s targeting %s\n", aliasPath, targetPath)
 }
 
 func newCloneOperation(installPath string, name string, toolset setupscripts.Toolset) (string, func()) {
@@ -69,32 +57,68 @@ func newCloneOperation(installPath string, name string, toolset setupscripts.Too
 	return destinationPath, clone
 }
 
+func downloadFile(url, destinationPath string) {
+	fmt.Printf("downloading %s\n", url)
+	response, e := http.Get(url)
+	if e != nil {
+		fmt.Println("%s", e)
+		log.Fatal(e)
+	}
+
+	defer response.Body.Close()
+
+	//open a file for writing
+	file, err := os.Create(destinationPath)
+	if err != nil {
+		fmt.Println("%s", e)
+		log.Fatal(err)
+	}
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		fmt.Println("%s", e)
+		log.Fatal(err)
+	}
+	file.Close()
+	fmt.Printf("done downloading %s\n", url)
+}
+
 func newDownloadOperation(installPath string, name string, toolset setupscripts.Toolset) (string, func()) {
 
 	packageName := strings.Join([]string{name, toolset.Version}, ".")
 	destinationPath := filepath.Join(installPath, packageName)
 
+	err := os.MkdirAll(destinationPath, 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	parts := strings.Split(toolset.Url, "/")
 	filename := parts[len(parts)-1]
 
-	downloadPath := filepath.Join(installPath, filename)
-
-	var deploy func()
+	var deploy func(string)
 
 	if strings.HasSuffix(filename, "exe") {
-		deploy = func() {
-			fmt.Printf("creating directory %s\n", destinationPath)
-			fmt.Printf("copying %s to %s\n", downloadPath, destinationPath)
+		deploy = func(downloadPath string) {
+			os.Mkdir(destinationPath, 0755)
+			filePath := filepath.Join(destinationPath, filename)
+			os.Rename(downloadPath, filePath)
 		}
 	} else {
-		deploy = func() {
-			fmt.Printf("decompressing %s to %s\n", downloadPath, destinationPath)
+		deploy = func(downloadPath string) {
+			fmt.Printf("decompressing %s\n", downloadPath)
+			Unzip(downloadPath, destinationPath)
 		}
 	}
 
 	download := func() {
-		fmt.Printf("downloading %s to %s\n", toolset.Url, downloadPath)
-		deploy()
+		downloadPath := filepath.Join(installPath, filename)
+
+		downloadFile(toolset.Url, downloadPath)
+
+		deploy(downloadPath)
+
+		fmt.Printf("removing temp %s\n", downloadPath)
+		os.Remove(downloadPath)
 	}
 
 	return destinationPath, download
@@ -105,7 +129,6 @@ func NewToolsetOp(installPath, name string, toolset setupscripts.Toolset) Toolse
 	var path string
 	op := func() {}
 
-	// if toolset.url endswith .git => clone
 	if strings.HasSuffix(toolset.Url, ".git") {
 		path, op = newCloneOperation(installPath, name, toolset)
 	} else {
@@ -121,8 +144,18 @@ func main() {
 		panic(err)
 	}
 
-	binPath := "/c/bin"
-	installPath := "/c/bin/install"
+	binPath, err := ioutil.TempDir("", "example")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("binPath = %s\n", binPath)
+
+	installPath := filepath.Join(binPath, "install")
+
+	err = os.MkdirAll(installPath, 0755)
+	if err != nil {
+		panic(err)
+	}
 
 	var operations []ToolsetOp
 
@@ -136,10 +169,10 @@ func main() {
 
 	wg.Add(len(operations))
 	for _, op := range operations {
-		go func() {
+		go func(o ToolsetOp) {
 			defer wg.Done()
-			op.FetchPackage()
-		}()
+			o.FetchPackage()
+		}(op)
 	}
 	wg.Wait()
 
